@@ -1,0 +1,16 @@
+phone_number = _{      (ASCII_DIGIT{8, 9}) 
+                    | (ASCII_DIGIT{4} ~ "-" ~ ASCII_DIGIT{4}) 
+                    | (ASCII_DIGIT{5} ~ "-" ~ ASCII_DIGIT{4}) }
+cellphone = ${ (("(" ~ "0"? ~ ASCII_DIGIT{2} ~ ")") | "0"? ~ ASCII_DIGIT{2}) ~ WHITESPACE? ~ phone_number }
+car_plate = @{ ASCII_ALPHA{3} ~ "-"? ~ ASCII_DIGIT{4} }
+cpf = @{ (ASCII_DIGIT{3} ~ PUSH(".") ~ (ASCII_DIGIT{3} ~ POP) ~ (ASCII_DIGIT{3} ~ "-") ~ ASCII_DIGIT{2}) | ASCII_DIGIT{11} }
+real_number = @{ ASCII_DIGIT{1, 8} ~ ("." | ",") ~ ASCII_DIGIT{1, 2} }
+html_tag = ${ "<" ~ PUSH(ASCII_ALPHANUMERIC+ ~ ">") ~ (html_tag | (!"</" ~ ANY))* ~ "</" ~ POP }
+portuguese_word = @{ ASCII_ALPHA+ }
+cnpj = @{ (ASCII_DIGIT{2} ~ ("." ~ ASCII_DIGIT{3}){2} ~ "/000" ~ ("1" | "2") ~ "-" ~ ASCII_DIGIT{2}) | (ASCII_DIGIT{14}) }
+c_identifier = @{ ("_" | ASCII_ALPHA) ~ ("_" | ASCII_ALPHANUMERIC)* }
+
+identifiers = _{ SOI ~ WHITESPACE* ~ ( car_plate | c_identifier | cnpj | cellphone | cpf | real_number | html_tag | portuguese_word) ~ WHITESPACE* ~ &EOI}
+// program = { SOI ~ identifiers* ~ &EOI}
+
+WHITESPACE = _{ " " }
