@@ -1,0 +1,19 @@
+Identifier = @{ ("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")* }
+Type = { "char" | "int" |  "float" }
+Variable = { Type  ~ Identifier ~ ";" }
+
+Char = { PUSH("\'" | "\"") ~ (!("\'" | "\"") ~ ANY)* ~ POP }
+Int = @{ ASCII_DIGIT+ }
+Float = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
+
+Token = _{ SOI ~ (WHITESPACE* ~ (Variable | Type | Identifier | Char | Float | Int))* ~ &EOI }
+
+
+// token = ${ ((!ENDLINE ~ !";" ~ ANY)* ~ ";") }
+// file = _{ SOI 
+//             ~ ((ENDLINE | WHITESPACE)* ~ (token) ~ (ENDLINE | WHITESPACE)* 
+//             | (!ENDLINE ~ ANY)* ~ ENDLINE)* 
+//             ~ &EOI}
+
+WHITESPACE = _{ " " | "\t" }
+ENDLINE = _{ "\n" | "\r\n" | "\r"}
