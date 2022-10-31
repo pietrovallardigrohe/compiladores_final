@@ -5,7 +5,7 @@
  * 31/10/22
  * 
  * Dentro do cmd utilize dentro da pasta compiladores_final
- * "cargo build | cargo run" para compilar e rodar o programa 
+ * "cargo build" e "cargo run" para compilar e rodar o programa 
  * Arquivo "tests.txt" contém diversas palavras que aceitam e rejeitam as regras de produção
  * BNF Encontrada no arquivo Grammar/etapa1.pest
  */
