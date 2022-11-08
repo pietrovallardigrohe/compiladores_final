@@ -1,0 +1,17 @@
+Int = @{ ASCII_DIGIT+ }
+Float = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
+Number = { Float | Int }
+Char = { PUSH("\'" | "\"") ~ (!("\'" | "\"") ~ ANY)* ~ POP }
+Identifier = @{ ("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")* }
+Type = { "char" | "int" |  "float" }
+Conditional = { "==" | "=!" | "<=" | ">=" | "<" | ">"}
+ 
+Expr = { (Identifier | Number) ~ (("++" | "--") | (("+" | "-" | "*" | "/")? ~ "="? ~ (Identifier | Number))) }
+Variable = { Type ~ Identifier ~ ("=" ~ Number) }
+Condition = { (Identifier | Number) ~ Conditional ~ (Identifier | Number) }
+
+Statement = { (Variable | Expr) ~ ";" }
+Block = { SOI ~ "{" ~ Statement* ~ "}" }
+
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) }

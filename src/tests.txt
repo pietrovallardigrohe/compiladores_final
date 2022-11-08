@@ -1,24 +1,20 @@
-   
-   int   a;
-char 1;
-   a;
-   b
-  c;;
-char b; ab_ a 
-int  ca;float i;
-char c; a;
-int;
+if(a == b) {
+   a = 2;
+   c = 1;
+}
 
-ab;
-a;
-123nhjiasbhdi;
-'a';
-"ba";
-'b
-'abc";
-"ab'
-123
-999 . 01
-999 ,290
-12.3  ;
-float a, b ,  c;
+if (b != a) {
+   a = 1;
+   b = 2;
+}
+else {
+   c = 3;
+}
+
+switch(a) {
+   case b: 
+      c = 1;
+      break;
+   default:
+      d = 2;
+}

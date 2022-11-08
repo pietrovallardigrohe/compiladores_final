@@ -1,13 +1,13 @@
 /*
  * Pietro Vallardi Grohe
  * Compiladores
- * Etapa 1 
- * 31/10/22
+ * Etapa 2
+ * //TODO Data
  * 
  * Dentro do cmd utilize dentro da pasta compiladores_final
  * "cargo build" e "cargo run" para compilar e rodar o programa 
  * Arquivo "tests.txt" contém diversas palavras que aceitam e rejeitam as regras de produção
- * BNF Encontrada no arquivo Grammar/etapa1.pest
+ * BNF Encontrada no arquivo Grammar/etapa2.pest
  */
 use std::{fs, num::NonZeroUsize, path::Path};
 use pest::{Parser, iterators::Pairs, error::Error};
@@ -18,21 +18,22 @@ extern crate pest_derive;
 
 // Macro para gerar o Parser e o Enum com as regras automáticamente a partir de um arquivo .pest
 #[derive(Parser)] 
-#[grammar = "Grammar/etapa1.pest"] 
-pub struct CompilatorParser;    
+#[grammar = "Grammar/Grammar.pest"] 
+pub struct Compiler;
 //  Struct que conterá apenas a função parser
-
 fn main() {
     //  Define o limite de chamadas das regras não terminais
     pest::set_call_limit(NonZeroUsize::new(5000));
     
     print!("\n\n");
 
-    // Lê o caminho do arquivo
-    println!("File Path");
-    let mut file_path = String::new(); 
-    std::io::stdin().read_line(&mut file_path).expect("CANNOT READ INPUT");
-
+    /*
+     * // Lê o caminho do arquivo
+     * println!("File Path");
+     * let mut file_path = String::new(); 
+     * std::io::stdin().read_line(&mut file_path).expect("CANNOT READ INPUT");
+     */
+    let file_path = String::from("src\\a.txt"); 
     // Tenta ler o arquivo para a variável 'file'
     if let Ok(file) = fs::read_to_string(Path::new(&file_path.trim_end())) {
 
@@ -43,7 +44,7 @@ fn main() {
             * Faz o parse da linha e retorna um Resultado.
             * Caso aceite a gramática retorna os pares reconhecidos e se rejeita retorna um erro
             */
-            let parsed_line: Result<Pairs<Rule>, Error<Rule>> = CompilatorParser::parse(Rule::Token, raw_token);
+            let parsed_line: Result<Pairs<Rule>, Error<Rule>> = Lexer::Lexer::parse(Lexer::Rule::Token, raw_token);
             match parsed_line {
                 Ok(pairs) => {
                     for pair in pairs {
@@ -68,5 +69,32 @@ fn main() {
     } else {
         println!("\nCANNOT OPEN FILE");
     }
+
+}
+
+fn precompile(input: &str) -> Option<&str, Error> {
+
+    /*
+     * Removes newlines and apprends the line count to it 
+     *
+     * Raw Input
+     *
+     * if(a == 0) {
+     *
+     *     int b = 1;
+     *      
+     * } else {
+     *
+     *     float c = 1.0;
+     *     // a
+     * }
+     * 
+     * Precompilation
+     * 
+     * [1]if(a==0){[3]int b=1;[5]}else{[7]float c=1.0;[9]}
+     * 
+     */ 
+    
+    let mut result: &str = input.replace(NEWLINE, to);
 
 }
