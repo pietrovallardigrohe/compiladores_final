@@ -72,7 +72,7 @@ fn main() {
 
 }
 
-fn precompile(input: &str) -> Option<&str, Error> {
+fn precompile(input: &str) -> Option<String, Error> {
 
     /*
      * Removes newlines and apprends the line count to it 
@@ -91,10 +91,13 @@ fn precompile(input: &str) -> Option<&str, Error> {
      * 
      * Precompilation
      * 
-     * [1]if(a==0){[3]int b=1;[5]}else{[7]float c=1.0;[9]}
+     * [1]if(a == 0) {[3]int b = 1;[5]} else {[7]float c = 1.0;[8]// a[9]}
      * 
      */ 
+//     let mut treated: String = String::new(); 
+    let mut result = String::new();
+    input.lines().enumerate().filter(|(_, e)| !e.trim_start().is_empty()).for_each(|(index, element)| treated += &format!("[{}]{}", (index+1).to_string(), element.trim_start().trim_end()));
     
-    let mut result: &str = input.replace(NEWLINE, to);
-
+    Some(result);
+    
 }
