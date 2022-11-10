@@ -1,17 +1,18 @@
-IF = { "if" ~ &"(" }
+IF = { "if" }
+ELSE = { "else" }
 LINE = { "[" ~ ASCII_DIGIT+ ~ "]" }
 PARENTHESES = { "(" | ")" }
-IDENTIFIER = @{ ("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")* }
+IDENTIFIER = @{ !(IF | ELSE) ~ (("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")*) }
 CONDITIONAL = { "==" | "=!" | "<=" | ">=" | "<" | ">"}
 BRACKETS = { "{" | "}" }
-TYPE = { "char" | "int" |  "float" }
+TYPE = @{ ("char" | "int" |  "float") ~ &WHITESPACE }
 ATRIBUTION = { "=" }
 INT = @{ ASCII_DIGIT+ }
 FLOAT = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
 NUMBER = { FLOAT | INT }
 COMMA = { ";" }
 
-Token = { (LINE | IF | PARENTHESES | IDENTIFIER | CONDITIONAL | TYPE | ATRIBUTION | BRACKETS | NUMBER | COMMA)* ~ (ANY ~ !LINE)* }
+Token = _{ (LINE | IF | ELSE | PARENTHESES | TYPE | IDENTIFIER | CONDITIONAL | ATRIBUTION | BRACKETS | NUMBER | COMMA)* ~ (ANY ~ !LINE)* }
 
 WHITESPACE = _{ " " | "\t" }
-COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) }
+COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(LINE | NEWLINE) ~ ANY)*) }
