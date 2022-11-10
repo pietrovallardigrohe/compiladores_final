@@ -1,7 +1,17 @@
-IF = { "if" ~ &("(" | WHITESPACE) }
+IF = { "if" ~ &"(" }
 LINE = { "[" ~ ASCII_DIGIT+ ~ "]" }
+PARENTHESES = { "(" | ")" }
+IDENTIFIER = @{ ("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")* }
+CONDITIONAL = { "==" | "=!" | "<=" | ">=" | "<" | ">"}
+BRACKETS = { "{" | "}" }
+TYPE = { "char" | "int" |  "float" }
+ATRIBUTION = { "=" }
+INT = @{ ASCII_DIGIT+ }
+FLOAT = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
+NUMBER = { FLOAT | INT }
+COMMA = { ";" }
 
-Token = { (LINE | IF)* ~ (ANY ~ !LINE)* }
+Token = { (LINE | IF | PARENTHESES | IDENTIFIER | CONDITIONAL | TYPE | ATRIBUTION | BRACKETS | NUMBER | COMMA)* ~ (ANY ~ !LINE)* }
 
 WHITESPACE = _{ " " | "\t" }
 COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) }
