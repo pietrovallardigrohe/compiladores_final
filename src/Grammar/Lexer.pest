@@ -1,0 +1,7 @@
+IF = { "if" ~ &("(" | WHITESPACE) }
+LINE = { "[" ~ ASCII_DIGIT+ ~ "]" }
+
+Token = { (LINE | IF)* ~ (ANY ~ !LINE)* }
+
+WHITESPACE = _{ " " | "\t" }
+COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) }

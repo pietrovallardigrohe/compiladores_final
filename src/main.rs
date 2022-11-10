@@ -33,71 +33,97 @@ fn main() {
      * let mut file_path = String::new(); 
      * std::io::stdin().read_line(&mut file_path).expect("CANNOT READ INPUT");
      */
-    let file_path = String::from("src\\a.txt"); 
+    let file_path = String::from("src\\tests.txt"); 
     // Tenta ler o arquivo para a variável 'file'
-    if let Ok(file) = fs::read_to_string(Path::new(&file_path.trim_end())) {
 
-        println!("\n---------------------\n");
-        // Separa o arquivo em linhas
-        for (line_count, raw_token) in file.lines().enumerate() {  
-            /*
-            * Faz o parse da linha e retorna um Resultado.
-            * Caso aceite a gramática retorna os pares reconhecidos e se rejeita retorna um erro
-            */
-            let parsed_line: Result<Pairs<Rule>, Error<Rule>> = Lexer::Lexer::parse(Lexer::Rule::Token, raw_token);
-            match parsed_line {
-                Ok(pairs) => {
-                    for pair in pairs {
-                        match pair.as_rule() {
-                            Rule::Variable  
-                            | Rule::Identifier
-                            | Rule::Type 
-                            | Rule::Char 
-                            | Rule::Int 
-                            | Rule::Float => println!("Line: {} = {:?}: \"{}\"", line_count+1, pair.as_rule(), pair.as_str()),
-                            _ => println!("Não reconhecido \"{}\" Rule: {:?} Line: {}", pair.as_str(), pair.as_rule(), line_count+1)
-                        }
-                    }
-                },
-                Err(error) => {
-                    println!("ERROR: Line: {}, ---> \"{}\"", line_count+1, error.line().to_owned());
-                }
-            }
-        }
-        print!("\n---------------------\n");
+    let Ok(file_string) = fs::read_to_string(Path::new(&file_path.trim_end())) else {
+        return println!("\nCANNOT OPEN FILE");
+    };
+    
+    println!("{}", precompile(&file_string));
 
-    } else {
-        println!("\nCANNOT OPEN FILE");
-    }
+    // if let Ok(file) = fs::read_to_string(Path::new(&file_path.trim_end())) {
+
+        
+
+    //     println!("\n---------------------\n");
+    //     // Separa o arquivo em linhas
+    //     for (line_count, raw_token) in file.lines().enumerate() {  
+    //         /*
+    //         * Faz o parse da linha e retorna um Resultado.
+    //         * Caso aceite a gramática retorna os pares reconhecidos e se rejeita retorna um erro
+    //         */
+    //         let parsed_line: Result<Pairs<Rule>, Error<Rule>> = Compiler::parse(Rule::Token, raw_token);
+    //         match parsed_line {
+    //             Ok(pairs) => {
+    //                 for pair in pairs {
+    //                     match pair.as_rule() {
+    //                         Rule::Variable  
+    //                         | Rule::Identifier
+    //                         | Rule::Type 
+    //                         | Rule::Char 
+    //                         | Rule::Int 
+    //                         | Rule::Float => println!("Line: {} = {:?}: \"{}\"", line_count+1, pair.as_rule(), pair.as_str()),
+    //                         _ => println!("Não reconhecido \"{}\" Rule: {:?} Line: {}", pair.as_str(), pair.as_rule(), line_count+1)
+    //                     }
+    //                 }
+    //             },
+    //             Err(error) => {
+    //                 println!("ERROR: Line: {}, ---> \"{}\"", line_count+1, error.line().to_owned());
+    //             }
+    //         }
+    //     }
+    //     print!("\n---------------------\n");
+
+    // } else {
+    //     println!("\nCANNOT OPEN FILE");
+    // }
 
 }
 
-fn precompile(input: &str) -> Option<String, Error> {
+/*
+ * Removes newlines and apprends the line count to it 
+ *
+ * Raw Input
+ *
+ * if(a == 0) {
+ *
+ *     int b = 1;
+ *      
+ * } else {
+ *
+ *     float c = 1.0;
+ *     // a
+ * }
+ * 
+ * Precompilation
+ * 
+ * [1]if(a == 0) {[3]int b = 1;[5]} else {[7]float c = 1.0;[8]// a[9]}
+ * 
+ */ 
+fn precompile(input: &str) -> String {
 
-    /*
-     * Removes newlines and apprends the line count to it 
-     *
-     * Raw Input
-     *
-     * if(a == 0) {
-     *
-     *     int b = 1;
-     *      
-     * } else {
-     *
-     *     float c = 1.0;
-     *     // a
-     * }
-     * 
-     * Precompilation
-     * 
-     * [1]if(a == 0) {[3]int b = 1;[5]} else {[7]float c = 1.0;[8]// a[9]}
-     * 
-     */ 
-//     let mut treated: String = String::new(); 
     let mut result = String::new();
-    input.lines().enumerate().filter(|(_, e)| !e.trim_start().is_empty()).for_each(|(index, element)| treated += &format!("[{}]{}", (index+1).to_string(), element.trim_start().trim_end()));
+
+    input.lines().enumerate()
+        .filter(|(_, e)| !e.trim().is_empty())
+        .for_each(|(index, element)| result += &format!("[{}]{}", (index+1).to_string(), element.trim()));
     
-    Some(result);
+    return result;
     
+}
+
+fn lexer(input: &str) -> String {
+
+    mod Lexer {
+        #[derive(Parser)] 
+        #[grammar = "Grammar/Lexer.pest"] 
+        pub struct Lexer;
+
+        // let parsed = Lexer::parse();
+
+    }
+
+    return String::from("a");
+
 }
