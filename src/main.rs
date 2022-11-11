@@ -22,6 +22,7 @@ extern crate pest_derive;
 pub struct Compiler;
 //  Struct que conterá apenas a função parser
 fn main() {
+    std::env::set_var("RUST_BACKTRACE", "1");
     //  Define o limite de chamadas das regras não terminais
     pest::set_call_limit(NonZeroUsize::new(5000));
     
@@ -39,8 +40,9 @@ fn main() {
     let Ok(file_string) = fs::read_to_string(Path::new(&file_path.trim_end())) else {
         return println!("\nCANNOT OPEN FILE");
     };
-    
-    println!("{}", precompile(&file_string));
+    let precompilation = precompile(&file_string);
+    println!("{}", precompilation);
+    println!("{}", lexer(&precompilation))
 
     // if let Ok(file) = fs::read_to_string(Path::new(&file_path.trim_end())) {
 
@@ -115,15 +117,31 @@ fn precompile(input: &str) -> String {
 
 fn lexer(input: &str) -> String {
 
-    mod Lexer {
+    mod lexer_func {
         #[derive(Parser)] 
         #[grammar = "Grammar/Lexer.pest"] 
         pub struct Lexer;
-
-        // let parsed = Lexer::parse();
-
     }
 
-    return String::from("a");
+    use lexer_func::*;
+
+    let mut result: String = String::new();
+    
+    let parsed = Lexer::parse(Rule::TOKEN, &input);
+    match parsed {
+        Ok(pairs) => {
+            for pair in pairs {
+                match pair.as_rule() {
+                    Rule::IDENTIFIER => result.push_str("<ID>\n"),
+                    Rule::ERROR => result.push_str(&format!("ERROR: `{}`\n", pair.as_str())),
+                    _ => result.push_str(&format!("<{}>\n", pair.as_str().to_uppercase()))
+                }
+            }
+        }
+        Err(e) => println!("ERROR\n\n {}", e)
+    }
+
+
+    return result;
 
 }

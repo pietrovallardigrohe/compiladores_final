@@ -2,9 +2,9 @@ if(a == b) {
    a = 2;
    c = 1;
 }
-/*
+
 if (b != a) {
-   a = 1;
+   a += 1;
    b = 2;
 }
 else {
@@ -16,6 +16,5 @@ switch(a) {
       c = 1;
       break;
    default:
-      d = 2;
+      d = 2; /sdqw312;\zsdasd
 }
-*/

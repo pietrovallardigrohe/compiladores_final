@@ -3,16 +3,17 @@ ELSE = { "else" }
 LINE = { "[" ~ ASCII_DIGIT+ ~ "]" }
 PARENTHESES = { "(" | ")" }
 IDENTIFIER = @{ !(IF | ELSE) ~ (("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")*) }
-CONDITIONAL = { "==" | "=!" | "<=" | ">=" | "<" | ">"}
-BRACKETS = { "{" | "}" }
+CONDITIONAL = { "==" | "!=" | "<=" | ">=" | "<" | ">"}
+BRACKET = { "{" | "}" }
 TYPE = @{ ("char" | "int" |  "float") ~ &WHITESPACE }
-ATRIBUTION = { "=" }
+ATRIBUTION = { "+=" | "-=" | "*=" | "/=" | "=" }
 INT = @{ ASCII_DIGIT+ }
 FLOAT = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
-NUMBER = { FLOAT | INT }
+NUM = @{ FLOAT | INT ~ &(WHITESPACE | COMMA)}
 COMMA = { ";" }
+ERROR = { (!(LINE | WHITESPACE | COMMA | BRACKET) ~ ANY)+ }
 
-Token = _{ (LINE | IF | ELSE | PARENTHESES | TYPE | IDENTIFIER | CONDITIONAL | ATRIBUTION | BRACKETS | NUMBER | COMMA)* ~ (ANY ~ !LINE)* }
+TOKEN = _{ (LINE | IF | ELSE | PARENTHESES | TYPE | IDENTIFIER | CONDITIONAL | ATRIBUTION | BRACKET | NUM | COMMA | ERROR)* ~ &EOI }
 
 WHITESPACE = _{ " " | "\t" }
 COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(LINE | NEWLINE) ~ ANY)*) }
