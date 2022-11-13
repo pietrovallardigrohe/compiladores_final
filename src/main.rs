@@ -48,43 +48,6 @@ fn main() {
     println!("Lexer: \n{}", lexical);
     println!("Syntax: \n{}", syntactical);
 
-    // if let Ok(file) = fs::read_to_string(Path::new(&file_path.trim_end())) {
-
-        
-
-    //     println!("\n---------------------\n");
-    //     // Separa o arquivo em linhas
-    //     for (line_count, raw_token) in file.lines().enumerate() {  
-    //         /*
-    //         * Faz o parse da linha e retorna um Resultado.
-    //         * Caso aceite a gramática retorna os pares reconhecidos e se rejeita retorna um erro
-    //         */
-    //         let parsed_line: Result<Pairs<Rule>, Error<Rule>> = Compiler::parse(Rule::Token, raw_token);
-    //         match parsed_line {
-    //             Ok(pairs) => {
-    //                 for pair in pairs {
-    //                     match pair.as_rule() {
-    //                         Rule::Variable  
-    //                         | Rule::Identifier
-    //                         | Rule::Type 
-    //                         | Rule::Char 
-    //                         | Rule::Int 
-    //                         | Rule::Float => println!("Line: {} = {:?}: \"{}\"", line_count+1, pair.as_rule(), pair.as_str()),
-    //                         _ => println!("Não reconhecido \"{}\" Rule: {:?} Line: {}", pair.as_str(), pair.as_rule(), line_count+1)
-    //                     }
-    //                 }
-    //             },
-    //             Err(error) => {
-    //                 println!("ERROR: Line: {}, ---> \"{}\"", line_count+1, error.line().to_owned());
-    //             }
-    //         }
-    //     }
-    //     print!("\n---------------------\n");
-
-    // } else {
-    //     println!("\nCANNOT OPEN FILE");
-    // }
-
 }
 
 /*
@@ -143,11 +106,12 @@ fn lexer(input: &str) -> String {
                     Rule::NUM => result.push_str("<NUM>"),
                     Rule::CHAR => result.push_str("<STRING>"),
                     Rule::ERROR => result.push_str("<ERROR>"),
+                    Rule::LINE => (),
                      _ => result.push_str(&format!("<{}>", pair.as_str().to_uppercase()))
                 }
             }
         }
-        Err(e) => println!("ERROR\n\n {}", e)
+        Err(e) => println!("FATAL ERROR\n\n {}", e)
     }
 
     result
@@ -164,14 +128,18 @@ fn syntax(input: &str) -> String {
         pub struct Syntax;
     }
     use syntax_func::*;
-
+    use pest::error::LineColLocation;
     // let mut result = String::new();
+//<[1]><IF><(><ID><CND><ID><)><{><[2]><ID><ATTRIBUTION><NUM><COMMA><[3]><INT><ID><ATTRIBUTION><NUM><COMMA><[4]><ID><++><COMMA><[5]><ID><ATTRIBUTION><NUM><COMMA><[6]><ID><ATTRIBUTION><ID><NUM><COMMA><[8]><}><ELSE><{><[10]><CHAR><ID><ATTRIBUTION><STRING><COMMA><[11]><ID><ATTRIBUTION><ERROR><COMMA><[13]><}>
 
-    // <[1]><IF><(><ID><CND><ID><)><{><[2]><ID><ATTRIBUTION><NUM><COMMA><[3]><INT><[4]><ID><ATTRIBUTION><NUM><COMMA><[6]><}>
-    let result = match Syntax::parse(Rule::IF_BLOCK, input) {
-        Ok(_) => String::from("ACCEPTED"),
-        Err(e) => e.to_string(),
-    };
-
-    result
+    match Syntax::parse(Rule::IF_BLOCK, &input) {
+        Ok(_) => return String::from("ACCEPTED"),
+        Err(e) => {
+            if let LineColLocation::Pos(pos) = e.line_col {
+                return pos.1.to_string()
+            } else {
+                String::from("A")
+            }
+        }
+    }
 }
