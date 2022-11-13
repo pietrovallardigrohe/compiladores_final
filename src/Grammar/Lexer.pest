@@ -6,14 +6,16 @@ IDENTIFIER = @{ !(IF | ELSE) ~ (("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")
 CONDITIONAL = { "==" | "!=" | "<=" | ">=" | "<" | ">"}
 BRACKET = { "{" | "}" }
 TYPE = @{ ("char" | "int" |  "float") ~ &WHITESPACE }
-ATRIBUTION = { "+=" | "-=" | "*=" | "/=" | "=" }
+OPERATOR = { "++" | "--" | "*" | "/" | "+" | "-" }
+ATTRIBUTION = { "+=" | "-=" | "*=" | "/=" | "=" }
 INT = @{ ASCII_DIGIT+ }
 FLOAT = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
 NUM = @{ FLOAT | INT ~ &(WHITESPACE | COMMA)}
+CHAR = { PUSH("\'" | "\"") ~ (!("\'" | "\"") ~ ANY)* ~ POP }
 COMMA = { ";" }
 ERROR = { (!(LINE | WHITESPACE | COMMA | BRACKET) ~ ANY)+ }
 
-TOKEN = _{ (LINE | IF | ELSE | PARENTHESES | TYPE | IDENTIFIER | CONDITIONAL | ATRIBUTION | BRACKET | NUM | COMMA | ERROR)* ~ &EOI }
+TOKEN = _{ (LINE | IF | ELSE | PARENTHESES | TYPE | IDENTIFIER | CONDITIONAL | ATTRIBUTION | OPERATOR | BRACKET | NUM | COMMA | CHAR | ERROR)* ~ &EOI }
 
 WHITESPACE = _{ " " | "\t" }
-COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(LINE | NEWLINE) ~ ANY)*) }
+COMMENT = _{ LINE? ~ (("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(LINE | NEWLINE) ~ ANY)*)) }

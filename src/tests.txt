@@ -1,20 +1,13 @@
 if(a == b) {
    a = 2;
-   c = 1;
-}
+   int a = 2;//asdasd
+   a++;
+   b+=1;
+   c =s 1;
+   //asas
+} else {
 
-if (b != a) {
-   a += 1;
-   b = 2;
-}
-else {
-   c = 3;
-}
+   char c = "asdas";
+   c = 2a;
 
-switch(a) {
-   case b: 
-      c = 1;
-      break;
-   default:
-      d = 2; /sdqw312;\zsdasd
 }

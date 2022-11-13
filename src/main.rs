@@ -10,7 +10,7 @@
  * BNF Encontrada no arquivo Grammar/etapa2.pest
  */
 use std::{fs, num::NonZeroUsize, path::Path};
-use pest::{Parser, iterators::Pairs, error::Error};
+use pest::{Parser};
 
 extern crate pest;
 #[macro_use]
@@ -21,6 +21,7 @@ extern crate pest_derive;
 #[grammar = "Grammar/Grammar.pest"] 
 pub struct Compiler;
 //  Struct que conterá apenas a função parser
+
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
     //  Define o limite de chamadas das regras não terminais
@@ -38,11 +39,14 @@ fn main() {
     // Tenta ler o arquivo para a variável 'file'
 
     let Ok(file_string) = fs::read_to_string(Path::new(&file_path.trim_end())) else {
-        return println!("\nCANNOT OPEN FILE");
+        return println!("CANNOT OPEN FILE");
     };
     let precompilation = precompile(&file_string);
-    println!("{}", precompilation);
-    println!("{}", lexer(&precompilation))
+    let lexical = lexer(&precompilation);
+    let syntactical = syntax(&lexical);
+    println!("Precompiled: \n{}\n", precompilation);
+    println!("Lexer: \n{}", lexical);
+    println!("Syntax: \n{}", syntactical);
 
     // if let Ok(file) = fs::read_to_string(Path::new(&file_path.trim_end())) {
 
@@ -127,21 +131,47 @@ fn lexer(input: &str) -> String {
 
     let mut result: String = String::new();
     
-    let parsed = Lexer::parse(Rule::TOKEN, &input);
+    let parsed = Lexer::parse(Rule::TOKEN, input);
     match parsed {
         Ok(pairs) => {
             for pair in pairs {
-                match pair.as_rule() {
-                    Rule::IDENTIFIER => result.push_str("<ID>\n"),
-                    Rule::ERROR => result.push_str(&format!("ERROR: `{}`\n", pair.as_str())),
-                    _ => result.push_str(&format!("<{}>\n", pair.as_str().to_uppercase()))
+                match &pair.as_rule() {
+                    Rule::IDENTIFIER => result.push_str("<ID>"),
+                    Rule::CONDITIONAL => result.push_str("<CND>"),
+                    Rule::ATTRIBUTION => result.push_str("<ATTRIBUTION>"),
+                    Rule::COMMA => result.push_str("<COMMA>"),
+                    Rule::NUM => result.push_str("<NUM>"),
+                    Rule::CHAR => result.push_str("<STRING>"),
+                    Rule::ERROR => result.push_str("<ERROR>"),
+                     _ => result.push_str(&format!("<{}>", pair.as_str().to_uppercase()))
                 }
             }
         }
         Err(e) => println!("ERROR\n\n {}", e)
     }
 
+    result
+    
+}
 
-    return result;
+fn syntax(input: &str) -> String {
 
+    //TODO ERROR HANDLING
+
+    mod syntax_func {
+        #[derive(Parser)]
+        #[grammar = "Grammar/Syntax.pest"]
+        pub struct Syntax;
+    }
+    use syntax_func::*;
+
+    // let mut result = String::new();
+
+    // <[1]><IF><(><ID><CND><ID><)><{><[2]><ID><ATTRIBUTION><NUM><COMMA><[3]><INT><[4]><ID><ATTRIBUTION><NUM><COMMA><[6]><}>
+    let result = match Syntax::parse(Rule::IF_BLOCK, input) {
+        Ok(_) => String::from("ACCEPTED"),
+        Err(e) => e.to_string(),
+    };
+
+    result
 }

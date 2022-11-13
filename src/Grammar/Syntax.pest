@@ -1,0 +1,27 @@
+IF = { "<IF>" }
+ELSE = { "<ELSE>" }
+ID = { "<ID>" }
+CND = { "<CND>" }
+ATTRI = { "<ATTRIBUTION>" }
+COMMA = { "<COMMA>" }
+NUM = { "<NUM>" }
+CHAR = { "<STRING>" }
+OPERATOR = { "++" | "--" | "*" | "/" | "+" | "-" }
+OPEN_PARENTHESES = { "<(>" }
+CLOSE_PARENTHESES = { "<)>" }
+OPEN_BRACKETS = { "<{>" }
+CLOSE_BRACKETS = { "<}>" }
+NUMERIC_TYPE = { "<INT>" | "<FLOAT>" }
+CHAR_TYPE = { "<CHAR>" }
+
+VARIABLE = { (NUMERIC_TYPE ~ ID ~ ATTRI ~ (EXPR | NUM)) | (CHAR_TYPE ~ ID ~ ATTRI ~ CHAR) }
+EXPR = { (ID | NUM) ~ (OPERATOR) ~ (ID | NUM) }
+
+COMMAND = { (EXPR | (ID ~ ("<++>" | "<-->")) | VARIABLE | (ID ~ ATTRI ~ (EXPR | NUM))) ~ COMMA}
+BLOCK = { OPEN_BRACKETS ~ (COMMAND)* ~ CLOSE_BRACKETS }
+CONDITION = { ID ~ CND ~ ID }
+IF_BLOCK = { SOI ~ IF ~ OPEN_PARENTHESES ~ CONDITION ~ CLOSE_PARENTHESES ~ BLOCK ~ (ELSE ~ BLOCK)? ~ &EOI }
+
+LINE = _{ "<[" ~ ASCII_DIGIT+ ~ "]>" }
+WHITESPACE = _{ " " | "\t" | ("<[" ~ ASCII_DIGIT+ ~ "]>")}
+COMMENT = _{ LINE? ~ (("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(LINE | NEWLINE) ~ ANY)*)) }
