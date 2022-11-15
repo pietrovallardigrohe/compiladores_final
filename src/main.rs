@@ -2,52 +2,74 @@
  * Pietro Vallardi Grohe
  * Compiladores
  * Etapa 2
- * //TODO Data
+ * 15/11/2022
  * 
  * Dentro do cmd utilize dentro da pasta compiladores_final
- * "cargo build" e "cargo run" para compilar e rodar o programa 
+ * "cargo build" para compilar e "cargo run" para rodar o programa 
  * Arquivo "tests.txt" contém diversas palavras que aceitam e rejeitam as regras de produção
- * BNF Encontrada no arquivo Grammar/etapa2.pest
+ * BNF Encontrada no arquivo Grammar/Lexer.pest e Grammar/Syntax.pest
  */
-use std::{fs, num::NonZeroUsize, path::Path};
-use pest::{Parser};
+use std::{fs, path::Path, io::BufRead};
+use pest::Parser;
+use std::collections::HashSet;
 
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
-// Macro para gerar o Parser e o Enum com as regras automáticamente a partir de um arquivo .pest
-#[derive(Parser)] 
-#[grammar = "Grammar/Grammar.pest"] 
-pub struct Compiler;
-//  Struct que conterá apenas a função parser
-
 fn main() {
-    std::env::set_var("RUST_BACKTRACE", "1");
+    // std::env::set_var("RUST_BACKTRACE", "1");
     //  Define o limite de chamadas das regras não terminais
-    pest::set_call_limit(NonZeroUsize::new(5000));
+    // pest::set_call_limit(NonZeroUsize::new(5000));
     
-    print!("\n\n");
+    print!("\n");
 
-    /*
-     * // Lê o caminho do arquivo
-     * println!("File Path");
-     * let mut file_path = String::new(); 
-     * std::io::stdin().read_line(&mut file_path).expect("CANNOT READ INPUT");
-     */
-    let file_path = String::from("src\\tests.txt"); 
+    // Lê o caminho do arquivo
+    println!("File Path");
+    let mut file_path = String::new(); 
+    std::io::stdin().lock().read_line(&mut file_path).expect("CANNOT READ INPUT");
+    println!("\n\n");
+    
+    // Arquivo utilizado em testes
+    // let file_path = String::from("src\\tests.txt"); 
+    
     // Tenta ler o arquivo para a variável 'file'
-
-    let Ok(file_string) = fs::read_to_string(Path::new(&file_path.trim_end())) else {
+    let Ok(raw_input) = fs::read_to_string(Path::new(&file_path.trim_end())) else {
         return println!("CANNOT OPEN FILE");
     };
-    let precompilation = precompile(&file_string);
-    let lexical = lexer(&precompilation);
-    let syntactical = syntax(&lexical);
-    println!("Precompiled: \n{}\n", precompilation);
-    println!("Lexer: \n{}", lexical);
-    println!("Syntax: \n{}", syntactical);
 
+    let mut filtered = String::new();
+
+    let precompilation = precompile(&raw_input.to_owned());
+    let (lex_errors, lex_input) = lexer(&precompilation);
+    // println!("{lex_input}");
+
+    // Se for válido a análize printa o arquivo indicando onde estão os erros
+    match syntax(&lex_input) {
+        Some(mut errors) => {
+            errors.extend(lex_errors);
+            errors.remove(&0);
+            for (index, line) in raw_input.lines().enumerate() {
+                if errors.contains(&(index+1)) {
+                    filtered.push_str(&format!("ERROR-----> {line}"));
+                } else {
+                    filtered.push_str(&format!("{line}"));
+                }
+                filtered.push_str("\n");
+            }
+            
+            println!("{}", filtered);
+            if errors.len() == 0 {
+                println!("No errors found");
+            } 
+            else {
+                println!("Error at line {:?}", errors);
+            }
+        },
+        None => {
+            println!("ERROR INVALID BRACES");
+        }
+    }
 }
 
 /*
@@ -68,78 +90,132 @@ fn main() {
  * Precompilation
  * 
  * [1]if(a == 0) {[3]int b = 1;[5]} else {[7]float c = 1.0;[8]// a[9]}
- * 
  */ 
 fn precompile(input: &str) -> String {
-
     let mut result = String::new();
 
     input.lines().enumerate()
-        .filter(|(_, e)| !e.trim().is_empty())
+        .filter(|(_, e)| !e.trim().is_empty() || !e.starts_with("//"))
         .for_each(|(index, element)| result += &format!("[{}]{}", (index+1).to_string(), element.trim()));
     
-    return result;
-    
+    return result
 }
 
-fn lexer(input: &str) -> String {
+/*
+ * Identifica os tokens e formata o resultado para a análize sintática
+ * [1]if(a == 0) {[3]int b = 1;[5]}
+ * <1> IF OPEN_PARENTHESES ID CONDITION CLOSE PARENTHESES OPEN_BRACES <3> INT ID ATTRIBUTION NUM COMMA <5> CLOSE_BRACES
+ * Retorna um Set contendo os erros e o resultado da formatação
+ */
 
+fn lexer(input: &str) -> (HashSet<usize>, String) {
+    // Macro para gerar o Parser e o Enum com as regras automáticamente a partir de um arquivo .pest
     mod lexer_func {
         #[derive(Parser)] 
         #[grammar = "Grammar/Lexer.pest"] 
         pub struct Lexer;
     }
-
     use lexer_func::*;
 
-    let mut result: String = String::new();
+    let mut result = String::new();
+    let mut line_count: usize = 0;
+    let mut errors: HashSet<usize> = HashSet::new();
     
-    let parsed = Lexer::parse(Rule::TOKEN, input);
-    match parsed {
+    // Faz o parsing da entrada e formatação de cada token
+    match Lexer::parse(Rule::TOKEN, input) {
         Ok(pairs) => {
             for pair in pairs {
                 match &pair.as_rule() {
-                    Rule::IDENTIFIER => result.push_str("<ID>"),
-                    Rule::CONDITIONAL => result.push_str("<CND>"),
-                    Rule::ATTRIBUTION => result.push_str("<ATTRIBUTION>"),
-                    Rule::COMMA => result.push_str("<COMMA>"),
-                    Rule::NUM => result.push_str("<NUM>"),
-                    Rule::CHAR => result.push_str("<STRING>"),
-                    Rule::ERROR => result.push_str("<ERROR>"),
-                    Rule::LINE => (),
-                     _ => result.push_str(&format!("<{}>", pair.as_str().to_uppercase()))
+                    Rule::LINE => {
+                        if let Ok(line) = pair.as_str().trim_matches(|c| c == '[' || c == ']').parse::<usize>() {
+                            line_count = line;
+                        } else {
+                            println!("UNEXPECTED LINE PARSING BEHAVIOR");
+                        }
+                    },
+                    Rule::IF | Rule::ELSE | Rule::SWITCH  => {
+                        result.push_str(&format!("<{}> {:?} ", line_count, pair.as_rule()));
+                    },
+                    Rule::TYPE => {
+                        result.push_str(&format!("{} ", pair.as_str().to_uppercase()));
+                        
+                    },
+                    Rule::ERROR => {
+                        result.push_str(&format!("ERROR")); 
+                        errors.insert(line_count);
+                    },
+                    _ => {
+                        result.push_str(&format!("{:?} ", pair.as_rule()));
+                    }
                 }
             }
-        }
-        Err(e) => println!("FATAL ERROR\n\n {}", e)
-    }
+        },
+        Err(err) => println!("{err}") 
+    } 
 
-    result
-    
+    (errors, result)  
 }
 
-fn syntax(input: &str) -> String {
-
-    //TODO ERROR HANDLING
-
+/*
+ * Analiza a sintaxe do lexer
+ * Input:
+ * <1> IF OPEN_PARENTHESES ID CONDITION CLOSE PARENTHESES OPEN_BRACES <3> INT ID ATTRIBUTION NUM COMMA <5> CLOSE_BRACES
+ * retorna os erros sintáticos ou None se tiverem erros de { }
+ */
+fn syntax(input: &str) -> Option<HashSet<usize>> {
+    // Macro para gerar o Parser e o Enum com as regras automáticamente a partir de um arquivo .pest
     mod syntax_func {
         #[derive(Parser)]
         #[grammar = "Grammar/Syntax.pest"]
         pub struct Syntax;
     }
     use syntax_func::*;
-    use pest::error::LineColLocation;
-    // let mut result = String::new();
-//<[1]><IF><(><ID><CND><ID><)><{><[2]><ID><ATTRIBUTION><NUM><COMMA><[3]><INT><ID><ATTRIBUTION><NUM><COMMA><[4]><ID><++><COMMA><[5]><ID><ATTRIBUTION><NUM><COMMA><[6]><ID><ATTRIBUTION><ID><NUM><COMMA><[8]><}><ELSE><{><[10]><CHAR><ID><ATTRIBUTION><STRING><COMMA><[11]><ID><ATTRIBUTION><ERROR><COMMA><[13]><}>
 
-    match Syntax::parse(Rule::IF_BLOCK, &input) {
-        Ok(_) => return String::from("ACCEPTED"),
-        Err(e) => {
-            if let LineColLocation::Pos(pos) = e.line_col {
-                return pos.1.to_string()
-            } else {
-                String::from("A")
+    let mut current_line: usize = 0;
+    let mut block: String = String::new();
+    let mut blocks: Vec<(usize, String)> = Vec::new();
+    let mut open_blocks: i32 = 0;
+    let mut errors: HashSet<usize> = HashSet::new();
+
+    // Separa os tokens em blocos IF/ELSE/SWITCH{...}
+    for token in input.split_whitespace() {
+        if let Ok(line) = token.trim_matches(|c| c == '<' || c == '>').parse::<usize>() {
+            current_line = line;
+        } else {
+            block += &format!("{token} ");
+            match token {
+                "OPEN_BRACES" => {
+                    open_blocks += 1;
+                },
+                "CLOSE_BRACES" => {
+                    open_blocks -= 1;
+                    if open_blocks == 0 {
+                        // println!("\nBlock\nLINE: {current_line}\n{block}");
+                        blocks.push((current_line, block));
+                        block = String::from("");
+                    } else if open_blocks == -1 {
+                        // println!("\nBlock\nLINE: {current_line}\n{block}");
+                        blocks.push((current_line, block));
+                        block = String::from("");      
+                    }
+                },
+                _ => ()
             }
         }
+    } 
+
+    // Se os blocos não forem fechados retorna None, invalidando o parse
+    if open_blocks != 0 {
+        return None
     }
+
+    // Faz a analize sintática em cada um dos blocos, coletando os erros
+    for (line, block) in blocks {
+        match Syntax::parse(Rule::IF_ELSE_SWITCH, &block) {
+            Ok(_) => errors.insert(0),//println!("\n\nPARSING ACCEPTED \n\n{:?}", pairs.as_str()),
+            Err(_) => errors.insert(line)
+        };
+    }
+
+    Some(errors)
 }

@@ -1,21 +1,66 @@
+LINE = { "[" ~ ASCII_DIGIT+ ~ "]" }
 IF = { "if" }
 ELSE = { "else" }
-LINE = { "[" ~ ASCII_DIGIT+ ~ "]" }
-PARENTHESES = { "(" | ")" }
-IDENTIFIER = @{ !(IF | ELSE) ~ (("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")*) }
+SWITCH = { "switch" }
+CASE = { "case" }
+DEFAULT = { "default" }
+COLON = ${ ":" }
+BREAK = { "break" }
+OPEN_PARENTHESES = { "(" }
+CLOSE_PARENTHESES = { ")" }
+PARENTHESES = { OPEN_PARENTHESES | CLOSE_PARENTHESES }
+OPEN_BRACES = { "{" }
+CLOSE_BRACES = { "}" }
+BRACES = { OPEN_BRACES | CLOSE_BRACES }
+COMMA = { ";" }
 CONDITIONAL = { "==" | "!=" | "<=" | ">=" | "<" | ">"}
-BRACKET = { "{" | "}" }
-TYPE = @{ ("char" | "int" |  "float") ~ &WHITESPACE }
-OPERATOR = { "++" | "--" | "*" | "/" | "+" | "-" }
+OPERATOR = { "*" | "/" | "+" | "-" }
+INCREMENT_DECREMENT = { "++" | "--" }
 ATTRIBUTION = { "+=" | "-=" | "*=" | "/=" | "=" }
+
 INT = @{ ASCII_DIGIT+ }
 FLOAT = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
-NUM = @{ FLOAT | INT ~ &(WHITESPACE | COMMA)}
-CHAR = { PUSH("\'" | "\"") ~ (!("\'" | "\"") ~ ANY)* ~ POP }
-COMMA = { ";" }
-ERROR = { (!(LINE | WHITESPACE | COMMA | BRACKET) ~ ANY)+ }
+NUM = @{ FLOAT | INT ~ &(WHITESPACE | COMMA) }
+STRING = { PUSH("\'" | "\"") ~ (!("\'" | "\"") ~ ANY)* ~ POP }
+TYPE = @{ ("char" | "int" |  "float") ~ &WHITESPACE }
+IDENTIFIER = @{ !(IF | ELSE) ~ (("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")*) }
+ERROR = { (!(LINE | WHITESPACE | COMMA | BRACES | PARENTHESES) ~ ANY)+ }
 
-TOKEN = _{ (LINE | IF | ELSE | PARENTHESES | TYPE | IDENTIFIER | CONDITIONAL | ATTRIBUTION | OPERATOR | BRACKET | NUM | COMMA | CHAR | ERROR)* ~ &EOI }
+TOKEN = _{ (LINE | SWITCH | CASE | BREAK | (DEFAULT | IDENTIFIER | INT | FLOAT | STRING) ~ COLON | DEFAULT | IF | ELSE | OPEN_PARENTHESES | CLOSE_PARENTHESES | OPEN_BRACES | CLOSE_BRACES | TYPE | IDENTIFIER | CONDITIONAL | INCREMENT_DECREMENT | ATTRIBUTION | OPERATOR | NUM | COMMA | STRING | ERROR)* ~ &EOI }
 
 WHITESPACE = _{ " " | "\t" }
-COMMENT = _{ LINE? ~ (("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(LINE | NEWLINE) ~ ANY)*)) }
+COMMENT = _{ LINE? ~ (("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(LINE | EOI) ~ ANY)*)) }
+
+/*
+GRAMATICA LEXER 
+<DIGIT> ::= 0-9
+<LETTER> ::= a-z | A-Z
+<WHITESPACE> ::= " " | "\t"
+<LINE> ::= [DIGIT+]
+<IF> ::= if
+<ELSE> ::= else
+<SWITCH> ::= switch
+<CASE> ::= case
+<DEFAULT> ::=
+<COLON> ::= : 
+<BREAK> ::= break
+<OPEN_PARENTHESES> ::= '('
+<CLOSE_PARENTHESES> ::= ')'
+<PARENTHESES> ::= <OPEN_PARENTHESES> | <CLOSE_PARENTHESES>
+<OPEN_BRACES> ::= {
+<CLOSE_BRACES> ::= }
+<BRACES> ::= <OPEN_BRACES> | <CLOSE_BRACES>
+<COMMA> ::= ;
+<CONDITIONAL> ::= == | != | <= | >= | < | >
+<OPERATOR> ::= * | / | + | -
+<INCREMENT_DECREMENT> ::= ++ | --
+<ATTRIBUTION> ::= += | -= | *= | /= | = 
+<INT> ::= <DIGIT>+
+<FLOAT> ::= <INT> ('.' | ,) <INT> 
+<NUM> ::= <FLOAT> | <INT> (<COMMA> | <WHITESPACE>)
+<STRING> ::= " ANY* " | ' ANY* '
+<TYPE> ::= (int | float | char) <WHITESPACE>*
+<IDENTIFIER> ::= !(<IF> | <ELSE>) (_ | LETTER) (LETTER | DIGIT | _)*
+<ERROR> ::= (!(<LINE> | <WHITESPACE> | <COMMA> | <BRACES> | <PARENTHESES>) ANY)+
+<TOKEN> ::= (<LINE> | <SWITCH> | <CASE> | <BREAK> | (<DEFAULT> | <IDENTIFIER> | <INT> | <FLOAT> | <STRING>)<COLON> | <DEFAULT> | <IF> | <ELSE> | <OPEN_PARENTHESES> | <CLOSE_PARENTHESES> | <OPEN_BRACES> | <CLOSE_BRACES> | <TYPE> | <IDENTIFIER> | <CONDITIONAL> | <INCREMENT_DECREMENT> | <ATTRIBUTION> | <OPERATOR> | <NUM> | <COMMA> | <STRING> | <ERROR>)*
+*/

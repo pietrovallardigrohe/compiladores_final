@@ -3,11 +3,16 @@ if(a == b) {
    int a = 2;//asdasd
    a++;
    b+=1;
-   c =s 1;
+ //  1c = 1;
    //asas
-} else {
+}
+else {
+   char c = "a"; 
+//   c = 2a;
+}
 
-   char c = "asdas";
-   c = 2a;
-
+switch(abc) {
+   case 1: { int a = a + 1; break; }
+   case 2: case 3: { float b += 2; break; }
+   default: { char a = "a"; } 
 }
