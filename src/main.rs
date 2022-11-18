@@ -178,6 +178,12 @@ fn syntax(input: &str) -> Option<HashSet<usize>> {
     let mut errors: HashSet<usize> = HashSet::new();
 
     // Separa os tokens em blocos IF/ELSE/SWITCH{...}
+    /*
+     * TODO
+     * Utilize a stack to determine block start and endings, return an error if stack is not full when the current token is IF or ELSE or EOI
+     * Proto:
+     * On IF/ELSE/EOI if BRACE STACK is not empty add line to error stack 
+     */
     for token in input.split_whitespace() {
         if let Ok(line) = token.trim_matches(|c| c == '<' || c == '>').parse::<usize>() {
             current_line = line;
