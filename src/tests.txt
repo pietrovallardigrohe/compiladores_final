@@ -1,14 +1,11 @@
-if(a == b) {
+if(a == b) 
    a = 2;
    int a = 2;//asdasd
    a++;
    b+=1;
- //  1c = 1;
-   //asas
 }
 else {
-   char c = "a"; 
-//   c = 2a;
+   char c = "a";
 }
 
 switch(abc) {
