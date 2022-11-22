@@ -7,9 +7,25 @@ use pest::Parser;
 #[grammar = "Grammar/Lexer.pest"]
 pub struct Lexer;
 
-// struct Token {
-//     rule: pest::Rule
-// }
+/*
+ * Token -> struct
+ * input -> raw input parsed
+ * line -> line of the token
+ * col -> start column of the token
+ * rule -> Rule that accepted the input
+ */
+struct Token {
+    input: &str,
+    line: usize,
+    col: usize,
+    rule: Rule
+}
+
+impl Token {
+   fn new(&str, usize, usize, Rule) {
+       todo!();
+   }
+}
 
 /*
  * Removes newlines and apprends the line count to it 
@@ -28,7 +44,7 @@ pub struct Lexer;
  * 
  * Precompilation
  * 
- * [1]if(a == 0) {[3]int b = 1;[5]} else {[7]float c = 1.0;[8]// a[9]}
+ * [1]if(a == 0) {[3]int b = 1;[5]} else {[7]float c = 1.0;[8]// a[9]}$end$
  */
 fn precompile(input: &str) -> String {
     let mut result = String::new();
@@ -43,15 +59,16 @@ fn precompile(input: &str) -> String {
 
 /*
  * Identifica os tokens e formata o resultado para a análize sintática
- * [1]if(a == 0) {[3]int b = 1;[5]}
- * <1> IF OPEN_PARENTHESES ID CONDITION CLOSE PARENTHESES OPEN_BRACES <3> INT ID ATTRIBUTION NUM COMMA <5> CLOSE_BRACES
- * Retorna um Set contendo os erros e o resultado da formatação
+ * [1]if(a == 0) {[3]int b = 1;[5]}$end$
+ * <1> IF OPEN_PARENTHESES ID CONDITION CLOSE PARENTHESES OPEN_BRACES <3> INT ID ATTRIBUTION NUM COMMA <5> CLOSE_BRACES END
+ * Retorna um vetor contendo os tokens reconhecidos e outro contendo os erros
  */
-pub fn get_tokens(input: &str) -> (HashSet<usize>, String) {
-
-    let mut result = String::new();
+pub fn get_tokens(input: &str) -> (Vec<Token>, Vec<Token>) {
+    todo!()
     let mut current_line: usize = 0;
-    let mut errors: HashSet<usize> = HashSet::new();
+    
+    let mut tokens: Vec<Token> = vec![];
+    let mut errors: Vec<Token> = vec![];
 
     let precompiled_input: String = precompile(input);
     println!("{}", precompiled_input);
@@ -60,6 +77,7 @@ pub fn get_tokens(input: &str) -> (HashSet<usize>, String) {
     match Lexer::parse(Rule::TOKEN, &precompiled_input) {
         Ok(pairs) => {
             for pair in pairs {
+                let _token = Token::new();
                 match &pair.as_rule() {
                     Rule::LINE => {
                         if let Ok(line) = pair.as_str().trim_matches(|c| c == '[' || c == ']').parse::<usize>() {
@@ -67,9 +85,6 @@ pub fn get_tokens(input: &str) -> (HashSet<usize>, String) {
                         } else {
                             println!("UNEXPECTED LINE PARSING BEHAVIOR");
                         } 
-                    },
-                    Rule::TYPE => {
-                        result.push_str(&format!("{} ", pair.as_str().to_uppercase()));
                     },
                     Rule::ERROR => {
                         result.push_str(&format!("ERROR ")); 
