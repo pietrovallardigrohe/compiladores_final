@@ -1,4 +1,4 @@
-if(a == b) 
+if(a == b) {
    a = 2;
    int a = 2;//asdasd
    a++;

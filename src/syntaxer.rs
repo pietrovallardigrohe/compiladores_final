@@ -10,7 +10,7 @@ use pest::Parser;
 pub fn syntax(input: &str) -> Option<HashSet<usize>> {
     // Macro para gerar o Parser e o Enum com as regras automáticamente a partir de um arquivo .pest
     mod syntax_func {
-        #[derive(Parser)]
+        #[derive(pest_derive::Parser)]
         #[grammar = "Grammar/Syntax.pest"]
         pub struct Syntax;
     }
@@ -83,10 +83,16 @@ pub fn syntax(input: &str) -> Option<HashSet<usize>> {
 
     // Faz a analize sintática em cada um dos blocos, coletando os erros
     for (line, block) in blocks {
-        match Syntax::parse(Rule::IF_ELSE_SWITCH, &block) {
-            Ok(_) => errors.insert(0),//println!("\n\nPARSING ACCEPTED \n\n{:?}", pairs.as_str()),
-            Err(_) => errors.insert(line)
-        };
+        let parse = Syntax::parse(Rule::IF_ELSE_SWITCH, &block);
+        match parse {
+            Ok(_) => {
+                errors.insert(0);
+            },//println!("\n\nPARSING ACCEPTED \n\n{:?}", pairs.as_str()),
+            Err(error) => {
+                errors.insert(line);
+                println!("========\n\n{:#?} \n{:#?}", error.location, error.variant);
+            }
+        }
     }
 
     Some(errors)

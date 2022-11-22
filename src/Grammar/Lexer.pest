@@ -18,7 +18,7 @@ OPERATOR = { "*" | "/" | "+" | "-" }
 INCREMENT_DECREMENT = { "++" | "--" }
 ATTRIBUTION = { "+=" | "-=" | "*=" | "/=" | "=" }
 
-END = { "$" }
+END = { "$end$" }
 
 INT = @{ ASCII_DIGIT+ }
 FLOAT = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
