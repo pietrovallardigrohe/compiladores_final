@@ -1,4 +1,4 @@
-if(a == b) {
+if(a == 1) {
    a = 2;
    int a = 2;//asdasd
    a++;
@@ -7,9 +7,8 @@ if(a == b) {
 else {
    char c = "a";
 }
-
 switch(abc) {
-   case 1: { int a = a + 1; break; }
+   case 1: { a = a + 1; break; }
    case 2: case 3: { float b += 2; break; }
    default: { char a = "a"; } 
 }

@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use pest::Parser;
 
 // Macro para gerar o Parser e o Enum com as regras automáticamente a partir de um arquivo .pest
@@ -8,92 +6,100 @@ use pest::Parser;
 pub struct Lexer;
 
 /*
- * Token -> struct
+ * Token
  * input -> raw input parsed
  * line -> line of the token
  * col -> start column of the token
  * rule -> Rule that accepted the input
  */
-struct Token {
-    input: &str,
-    line: usize,
-    col: usize,
-    rule: Rule
+#[derive(Debug, Copy, Clone)]
+pub struct Token<'a> {
+    pub input: &'a str,
+    pub line: usize,
+    pub column: usize,
+    pub rule: crate::lex::Rule
 }
 
-impl Token {
-   fn new(&str, usize, usize, Rule) {
-       todo!();
-   }
+impl Token<'_> {
+    pub fn new(input: &'_ str, line: usize, column: usize, rule: Rule) -> Token {
+        Token { 
+            input: input.into(),
+            line,
+            column,
+            rule
+        }
+    }
 }
+
+// impl Copy for Token {
+
+//     fn clone(&self) -> Token {
+//         *self;
+//     }
+
+// }
 
 /*
- * Removes newlines and apprends the line count to it 
- *
- * Raw Input
- *
- * if(a == 0) {
- *
- *     int b = 1;
- *      
- * } else {
- *
- *     float c = 1.0;
- *     // a
+ * Entrada:
+ * if(a == b) {
+ *     a = 2;
+ *     int a = 2;#asdasd
+ *     a++;
+ *     b+=1;
  * }
  * 
- * Precompilation
+ * Retorno: Vec<Token> todos os Tokens
+ * Token { input: "if", line: 1, column: 0, rule: IF }
+ * Token { input: "(", line: 1, column: 2, rule: OPEN_PARENTHESES }
+ * Token { input: "a", line: 1, column: 3, rule: IDENTIFIER }
+ * Token { input: "==", line: 1, column: 5, rule: CONDITIONAL }
+ * Token { input: "b", line: 1, column: 8, rule: IDENTIFIER }
+ * Token { input: ")", line: 1, column: 9, rule: CLOSE_PARENTHESES }
+ * Token { input: "{", line: 1, column: 11, rule: OPEN_BRACES }
+ * Token { input: "a", line: 2, column: 17, rule: IDENTIFIER }
+ * Token { input: "=", line: 2, column: 19, rule: ATTRIBUTION }
+ * Token { input: "2", line: 2, column: 21, rule: NUM }
+ * Token { input: ";", line: 2, column: 22, rule: COMMA }
+ * Token { input: "int", line: 3, column: 28, rule: TYPE }
+ * Token { input: "a", line: 3, column: 32, rule: IDENTIFIER }
+ * Token { input: "=", line: 3, column: 34, rule: ATTRIBUTION }
+ * Token { input: "2", line: 3, column: 36, rule: NUM }
+ * Token { input: ";", line: 3, column: 37, rule: COMMA }
+ * Token { input: "#asdasd", line: 3, column: 38, rule: ERROR }
+ * Token { input: "a", line: 4, column: 50, rule: IDENTIFIER }
+ * Token { input: "++", line: 4, column: 51, rule: INCREMENT_DECREMENT }
+ * Token { input: ";", line: 4, column: 53, rule: COMMA }
+ * Token { input: "b", line: 5, column: 59, rule: IDENTIFIER }
+ * Token { input: "+=", line: 5, column: 60, rule: ATTRIBUTION }
+ * Token { input: "1", line: 5, column: 62, rule: NUM }
+ * Token { input: ";", line: 5, column: 63, rule: COMMA }
+ * Token { input: "}", line: 6, column: 66, rule: CLOSE_BRACES }
  * 
- * [1]if(a == 0) {[3]int b = 1;[5]} else {[7]float c = 1.0;[8]// a[9]}$end$
- */
-fn precompile(input: &str) -> String {
-    let mut result = String::new();
-
-    input.lines().enumerate()
-        .filter(|(_, e)| !e.trim().is_empty() || !e.starts_with("//"))
-        .for_each(|(index, element)| result += &format!("[{}]{}", (index+1).to_string(), element.trim()));
-    result.push_str("$end$");
-
-    result
-}
-
-/*
- * Identifica os tokens e formata o resultado para a análize sintática
- * [1]if(a == 0) {[3]int b = 1;[5]}$end$
- * <1> IF OPEN_PARENTHESES ID CONDITION CLOSE PARENTHESES OPEN_BRACES <3> INT ID ATTRIBUTION NUM COMMA <5> CLOSE_BRACES END
- * Retorna um vetor contendo os tokens reconhecidos e outro contendo os erros
+ * Vec<Token> Erros
+ * Token { input: "#asdasd", line: 3, column: 38, rule: ERROR }
  */
 pub fn get_tokens(input: &str) -> (Vec<Token>, Vec<Token>) {
-    todo!()
-    let mut current_line: usize = 0;
+    // let mut current_line: usize = 1;
     
     let mut tokens: Vec<Token> = vec![];
     let mut errors: Vec<Token> = vec![];
 
-    let precompiled_input: String = precompile(input);
-    println!("{}", precompiled_input);
+    // let precompiled_input: String = precompile(input);
+    // println!("{}", precompiled_input);
 
     // Faz o parsing da entrada e formatação de cada token
-    match Lexer::parse(Rule::TOKEN, &precompiled_input) {
+    match Lexer::parse(Rule::TOKEN, input) {
         Ok(pairs) => {
             for pair in pairs {
-                let _token = Token::new();
-                match &pair.as_rule() {
-                    Rule::LINE => {
-                        if let Ok(line) = pair.as_str().trim_matches(|c| c == '[' || c == ']').parse::<usize>() {
-                            current_line = line;
-                        } else {
-                            println!("UNEXPECTED LINE PARSING BEHAVIOR");
-                        } 
-                    },
-                    Rule::ERROR => {
-                        result.push_str(&format!("ERROR ")); 
-                        errors.insert(current_line);
-                    },
-                    _ => {
-                        result.push_str(&format!("{current_line} {:?} ", pair.as_rule()));
-                    }
+                let pos = pair.as_span().start_pos();
+                //FIX TYPE
+                let token = Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_rule());
+                // println!("{:?}", token);
+                tokens.push(token);
+                if pair.as_rule() == Rule::ERROR {
+                    errors.push(token);
                 }
+
             }
         },
         Err(err) => println!("{err}") 
@@ -101,5 +107,6 @@ pub fn get_tokens(input: &str) -> (Vec<Token>, Vec<Token>) {
 
     // println!("{result}");
 
-    (errors, result)  
+    // (errors, result)  
+    (tokens, errors)
 }

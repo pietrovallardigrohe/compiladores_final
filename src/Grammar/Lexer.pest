@@ -1,4 +1,3 @@
-LINE = { "[" ~ ASCII_DIGIT+ ~ "]" }
 IF = { "if" }
 ELSE = { "else" }
 SWITCH = { "switch" }
@@ -15,23 +14,25 @@ BRACES = { OPEN_BRACES | CLOSE_BRACES }
 COMMA = { ";" }
 CONDITIONAL = { "==" | "!=" | "<=" | ">=" | "<" | ">"}
 OPERATOR = { "*" | "/" | "+" | "-" }
-INCREMENT_DECREMENT = { "++" | "--" }
+UNARY = { "++" | "--" }
 ATTRIBUTION = { "+=" | "-=" | "*=" | "/=" | "=" }
 
 END = { "$end$" }
 
 INT = @{ ASCII_DIGIT+ }
 FLOAT = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
-NUM = @{ FLOAT | INT ~ &(WHITESPACE | COMMA) }
+NUM = @{ FLOAT | INT ~ &(WHITESPACE | COMMA | PARENTHESES | BRACES) }
 STRING = { PUSH("\'" | "\"") ~ (!("\'" | "\"") ~ ANY)* ~ POP }
 TYPE = @{ ("char" | "int" |  "float") ~ &WHITESPACE }
 IDENTIFIER = @{ !(IF | ELSE) ~ (("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")*) }
-ERROR = { (!(LINE | WHITESPACE | COMMA | BRACES | PARENTHESES) ~ ANY)+ }
+ERROR = @{ (!(NEWLINE | WHITESPACE | COMMA | BRACES | PARENTHESES) ~ ANY)+ }
 
-TOKEN = _{ (END | LINE | SWITCH | CASE | BREAK | (DEFAULT | IDENTIFIER | INT | FLOAT | STRING) ~ COLON | DEFAULT | IF | ELSE | OPEN_PARENTHESES | CLOSE_PARENTHESES | OPEN_BRACES | CLOSE_BRACES | TYPE | IDENTIFIER | CONDITIONAL | INCREMENT_DECREMENT | ATTRIBUTION | OPERATOR | NUM | COMMA | STRING | ERROR)* ~ &EOI }
+TOKEN = _{ (END | SWITCH | CASE | BREAK | (DEFAULT | IDENTIFIER | INT | FLOAT | STRING) ~ COLON | DEFAULT | IF | ELSE | OPEN_PARENTHESES | CLOSE_PARENTHESES | OPEN_BRACES | CLOSE_BRACES | TYPE | IDENTIFIER | CONDITIONAL | UNARY | ATTRIBUTION | OPERATOR | NUM | COMMA | STRING | ERROR)* ~ &EOI }
 
-WHITESPACE = _{ " " | "\t" }
-COMMENT = _{ LINE? ~ (("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(LINE | EOI) ~ ANY)*)) }
+WHITESPACE = _{ NEWLINE | " " | "\t" }
+// NEWLINE = _{ "\r\n" | "\r" | "\n" }
+WHITE_SPACE = _{ " " | "\t" }
+COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(NEWLINE | EOI) ~ ANY)*) }
 
 /*
 GRAMATICA LEXER 
