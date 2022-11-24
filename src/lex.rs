@@ -60,7 +60,7 @@ impl Token<'_> {
  * Token { input: "=", line: 2, column: 19, rule: ATTRIBUTION }
  * Token { input: "2", line: 2, column: 21, rule: NUM }
  * Token { input: ";", line: 2, column: 22, rule: COMMA }
- * Token { input: "int", line: 3, column: 28, rule: TYPE }
+ * Token { input: "int", line: 3, column: 28, rule: INT }
  * Token { input: "a", line: 3, column: 32, rule: IDENTIFIER }
  * Token { input: "=", line: 3, column: 34, rule: ATTRIBUTION }
  * Token { input: "2", line: 3, column: 36, rule: NUM }
