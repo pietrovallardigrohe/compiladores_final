@@ -93,7 +93,14 @@ pub fn get_tokens(input: &str) -> (Vec<Token>, Vec<Token>) {
             for pair in pairs {
                 let pos = pair.as_span().start_pos();
                 //FIX TYPE
-                let token = Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_rule());
+                let token = match &pair.as_rule() {
+                    Rule::TYPE => Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_str().to_uppercase()),
+                    Rule::ERROR => {
+                        errors.push(Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_rule()));
+                        Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_rule())
+                    },
+                    _ => Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_rule())
+                }
                 // println!("{:?}", token);
                 tokens.push(token);
                 if pair.as_rule() == Rule::ERROR {
