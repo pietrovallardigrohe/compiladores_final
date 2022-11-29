@@ -12,7 +12,7 @@ pub struct Lexer;
  * col -> start column of the token
  * rule -> Rule that accepted the input
  */
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Token<'a> {
     pub input: &'a str,
     pub line: usize,
@@ -48,7 +48,7 @@ impl Token<'_> {
  *     b+=1;
  * }
  * 
- * Retorno: Vec<Token> todos os Tokens
+ * Retorno: Vec<Token> Todos os Tokens, incluindo os com erro
  * Token { input: "if", line: 1, column: 0, rule: IF }
  * Token { input: "(", line: 1, column: 2, rule: OPEN_PARENTHESES }
  * Token { input: "a", line: 1, column: 3, rule: IDENTIFIER }
@@ -79,29 +79,17 @@ impl Token<'_> {
  * Token { input: "#asdasd", line: 3, column: 38, rule: ERROR }
  */
 pub fn get_tokens(input: &str) -> (Vec<Token>, Vec<Token>) {
-    // let mut current_line: usize = 1;
-    
     let mut tokens: Vec<Token> = vec![];
     let mut errors: Vec<Token> = vec![];
 
-    // let precompiled_input: String = precompile(input);
-    // println!("{}", precompiled_input);
+    let trimmed_input = input.trim();
 
     // Faz o parsing da entrada e formatação de cada token
-    match Lexer::parse(Rule::TOKEN, input) {
+    match Lexer::parse(Rule::TOKEN, trimmed_input) {
         Ok(pairs) => {
             for pair in pairs {
                 let pos = pair.as_span().start_pos();
-                //FIX TYPE
-                let token = match &pair.as_rule() {
-                    Rule::TYPE => Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_str().to_uppercase()),
-                    Rule::ERROR => {
-                        errors.push(Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_rule()));
-                        Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_rule())
-                    },
-                    _ => Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_rule())
-                }
-                // println!("{:?}", token);
+                let token = Token::new(pair.as_str(), pos.line_col().0, pair.as_span().start(), pair.as_rule());
                 tokens.push(token);
                 if pair.as_rule() == Rule::ERROR {
                     errors.push(token);
@@ -112,8 +100,5 @@ pub fn get_tokens(input: &str) -> (Vec<Token>, Vec<Token>) {
         Err(err) => println!("{err}") 
     } 
 
-    // println!("{result}");
-
-    // (errors, result)  
     (tokens, errors)
 }

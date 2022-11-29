@@ -1,0 +1,81 @@
+IMPORTANTE: O projeto utiliza a nova versão do rust, 1.65.0, portanto utilizar "rustup update" no cmd para poder compilar o projeto
+
+Pietro Vallardi Grohe
+Compiladores
+Etapa 3
+25/11/2022
+
+Dentro do cmd utilize dentro da pasta compiladores_final
+"cargo build" para compilar e "cargo run" para rodar o programa 
+
+Resultado do programa fica no arquivo "out.txt"
+
+Int e Float tem limite maior que 3_000 caracteres
+String tem limite maior que 3_000 caracteres
+(aparentemente tem o limite do caracteres por token do compilador - usize::MAX = 18_446_744_073_709_551_615, não testado)
+
+Gramática do Lexer:
+
+<DIGIT> ::= [0-9]
+<LETTER> ::= [a-z] | [A-Z]
+<WHITESPACE> ::= ' ' | \t | <NEWLINE>
+<NEWLINE> ::= \r\n | \r | \n
+<IF> ::= if
+<ELSE> ::= else
+<SWITCH> ::= switch
+<CASE> ::= case
+<DEFAULT> ::= default
+<COLON> ::= : 
+<BREAK> ::= break
+<WHILE_FUNCTION> ::= while
+<FOR_FUNCTION> ::= for
+<OPEN_PARENTHESES> ::= '('
+<CLOSE_PARENTHESES> ::= ')'
+<PARENTHESES> ::= <OPEN_PARENTHESES> | <CLOSE_PARENTHESES>
+<OPEN_BRACES> ::= {
+<CLOSE_BRACES> ::= }
+<BRACES> ::= <OPEN_BRACES> | <CLOSE_BRACES>
+<COMMA> ::= ;
+<CONDITIONAL> ::= == | != | <= | >= | < | >
+<OPERATOR> ::= * | / | + | -
+<INCREMENT_DECREMENT> ::= ++ | --
+<ATTRIBUTION> ::= += | -= | *= | /= | = 
+<END> ::= $end$
+<INT> ::= <DIGIT>+
+<FLOAT> ::= <INT> ['.' | ,] <INT> 
+<NUM> ::= [<FLOAT> | <INT>] [<COMMA> | <WHITESPACE> | <PARENTHESES> | BRACES | COLON]
+<STRING> ::= " ANY* " | ' ANY* '
+<CHAR_TYPE> ::= char <WHITESPACE>
+<INT_TYPE> ::= int <WHITESPACE>
+<FLOAT_TYPE> ::= float <WHITESPACE>
+<IDENTIFIER> ::= ![<IF> | <ELSE>] [_ | LETTER] [LETTER | DIGIT | _]*
+<ERROR> ::= [![ <WHITESPACE> | <COMMA> | <BRACES> | <PARENTHESES>] ANY]+
+<TOKEN> ::= [<END> | WHILE_FUNCTION | FOR_FUNCTION | <SWITCH> | <CASE> | <BREAK> | [<DEFAULT> | <IDENTIFIER> | <NUM>| <STRING>] <COLON> | <DEFAULT> | <IF> | <ELSE> | <OPEN_PARENTHESES> | <CLOSE_PARENTHESES> | <OPEN_BRACES> | <CLOSE_BRACES> | <CHAR_TYPE> | <INT_TYPE> | <FLOAT_TYPE> | <IDENTIFIER> | <CONDITIONAL> | <UNARY> | <ATTRIBUTION> | <OPERATOR> | <NUM> | <COMMA> | <STRING> | <ERROR>]*
+<COMMENT> = [/* ANY* ~ "*/"] | ["//" ANY*] }
+
+Gramática da Sintáxe:
+
+<CASE> ::= CASE
+<COLON> ::= COLON
+<BREAK> ::= BREAK
+<DEFAULT> ::= DEFAULT
+<ID> ::= IDENTIFIER
+<CONDITIONAL> ::= CONDITIONAL
+<ATTRIBUTION> ::= ATTRIBUTION
+<COMMA> ::= COMMA
+<NUM> ::= NUM
+<STRING> ::= STRING
+<OPERATOR> ::= OPERATOR
+<UNARY> ::= UNARY
+
+<FLOAT_TYPE> ::= FLOAT_TYPE
+<INT_TYPE> ::= INT_TYPE
+<CHAR_TYPE> ::= CHAR_TYPE 
+<NUMERIC_TYPE> ::= <INT_TYPE> | <FLOAT_TYPE> 
+
+<VARIABLE> ::= [<NUMERIC_TYPE> <ID> <ATTRIBUTION> [<EXPR> | <NUM>]] | [<CHAR> <ID> <ATTRIBUTION> <STRING>]
+<CONDITION> ::= [<ID> | <NUM>] <CONDITIONAL> [<ID> | <NUM>] 
+<EXPR> ::= [<ID> | <NUM>] <OPERATOR> [<ID> | <NUM>]
+
+<COMMAND> ::= [[<ID> <ATTRIBUTION [<STRING> | <EXPR> | <NUM>]] | [<ID> <UNARY>] | <VARIABLE> | <BREAK>] COMMA>
+<WHITESPACE> ::= ' ' | \t

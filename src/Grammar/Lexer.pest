@@ -3,8 +3,10 @@ ELSE = { "else" }
 SWITCH = { "switch" }
 CASE = { "case" }
 DEFAULT = { "default" }
-COLON = ${ ":" }
+COLON = { ":" }
 BREAK = { "break" }
+WHILE_FUNCTION = { "while" }
+FOR_FUNCTION = { "for" }
 OPEN_PARENTHESES = { "(" }
 CLOSE_PARENTHESES = { ")" }
 PARENTHESES = { OPEN_PARENTHESES | CLOSE_PARENTHESES }
@@ -21,49 +23,15 @@ END = { "$end$" }
 
 INT = @{ ASCII_DIGIT+ }
 FLOAT = @{ ASCII_DIGIT+ ~ ("." | ",") ~ ASCII_DIGIT+ }
-NUM = @{ FLOAT | INT ~ &(WHITESPACE | COMMA | PARENTHESES | BRACES) }
+NUM = @{ FLOAT | INT ~ &(WHITESPACE | COMMA | PARENTHESES | BRACES | COLON) }
 STRING = { PUSH("\'" | "\"") ~ (!("\'" | "\"") ~ ANY)* ~ POP }
-TYPE = @{ ("char" | "int" |  "float") ~ &WHITESPACE }
+CHAR_TYPE = @{ "char" ~ &WHITESPACE }
+INT_TYPE = @{ "int" ~ &WHITESPACE }
+FLOAT_TYPE = @{ "float" ~ &WHITESPACE }
 IDENTIFIER = @{ !(IF | ELSE) ~ (("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")*) }
 ERROR = @{ (!(NEWLINE | WHITESPACE | COMMA | BRACES | PARENTHESES) ~ ANY)+ }
 
-TOKEN = _{ (END | SWITCH | CASE | BREAK | (DEFAULT | IDENTIFIER | INT | FLOAT | STRING) ~ COLON | DEFAULT | IF | ELSE | OPEN_PARENTHESES | CLOSE_PARENTHESES | OPEN_BRACES | CLOSE_BRACES | TYPE | IDENTIFIER | CONDITIONAL | UNARY | ATTRIBUTION | OPERATOR | NUM | COMMA | STRING | ERROR)* ~ &EOI }
+TOKEN = _{ (END | WHILE_FUNCTION | FOR_FUNCTION | SWITCH | CASE | BREAK | (DEFAULT | IDENTIFIER | NUM | STRING) ~ COLON | DEFAULT | IF | ELSE | OPEN_PARENTHESES | CLOSE_PARENTHESES | OPEN_BRACES | CLOSE_BRACES | CHAR_TYPE | INT_TYPE | FLOAT_TYPE | IDENTIFIER | CONDITIONAL | UNARY | ATTRIBUTION | OPERATOR | NUM | COMMA | STRING | ERROR)* ~ &EOI }
 
 WHITESPACE = _{ NEWLINE | " " | "\t" }
-// NEWLINE = _{ "\r\n" | "\r" | "\n" }
-WHITE_SPACE = _{ " " | "\t" }
 COMMENT = _{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") | ("//" ~ (!(NEWLINE | EOI) ~ ANY)*) }
-
-/*
-GRAMATICA LEXER 
-<DIGIT> ::= 0-9
-<LETTER> ::= a-z | A-Z
-<WHITESPACE> ::= " " | "\t"
-<LINE> ::= [DIGIT+]
-<IF> ::= if
-<ELSE> ::= else
-<SWITCH> ::= switch
-<CASE> ::= case
-<DEFAULT> ::=
-<COLON> ::= : 
-<BREAK> ::= break
-<OPEN_PARENTHESES> ::= '('
-<CLOSE_PARENTHESES> ::= ')'
-<PARENTHESES> ::= <OPEN_PARENTHESES> | <CLOSE_PARENTHESES>
-<OPEN_BRACES> ::= {
-<CLOSE_BRACES> ::= }
-<BRACES> ::= <OPEN_BRACES> | <CLOSE_BRACES>
-<COMMA> ::= ;
-<CONDITIONAL> ::= == | != | <= | >= | < | >
-<OPERATOR> ::= * | / | + | -
-<INCREMENT_DECREMENT> ::= ++ | --
-<ATTRIBUTION> ::= += | -= | *= | /= | = 
-<INT> ::= <DIGIT>+
-<FLOAT> ::= <INT> ('.' | ,) <INT> 
-<NUM> ::= <FLOAT> | <INT> (<COMMA> | <WHITESPACE>)
-<STRING> ::= " ANY* " | ' ANY* '
-<TYPE> ::= (int | float | char) <WHITESPACE>*
-<IDENTIFIER> ::= !(<IF> | <ELSE>) (_ | LETTER) (LETTER | DIGIT | _)*
-<ERROR> ::= (!(<LINE> | <WHITESPACE> | <COMMA> | <BRACES> | <PARENTHESES>) ANY)+
-<TOKEN> ::= (<LINE> | <SWITCH> | <CASE> | <BREAK> | (<DEFAULT> | <IDENTIFIER> | <INT> | <FLOAT> | <STRING>)<COLON> | <DEFAULT> | <IF> | <ELSE> | <OPEN_PARENTHESES> | <CLOSE_PARENTHESES> | <OPEN_BRACES> | <CLOSE_BRACES> | <TYPE> | <IDENTIFIER> | <CONDITIONAL> | <INCREMENT_DECREMENT> | <ATTRIBUTION> | <OPERATOR> | <NUM> | <COMMA> | <STRING> | <ERROR>)*
-*/
