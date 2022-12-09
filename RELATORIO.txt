@@ -2,8 +2,8 @@ IMPORTANTE: O projeto utiliza a nova versão do rust, 1.65.0, portanto utilizar 
 
 Pietro Vallardi Grohe
 Compiladores
-Etapa 3
-25/11/2022
+Etapa 4
+09/12/2022
 
 Dentro do cmd utilize dentro da pasta compiladores_final
 "cargo build" para compilar e "cargo run" para rodar o programa 

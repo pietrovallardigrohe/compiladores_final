@@ -1,4 +1,3 @@
 /target
+/out
 .vscode
-*.pdf
-out.txt
