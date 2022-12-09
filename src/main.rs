@@ -35,6 +35,8 @@ fn main() {
     let file_path = String::from("src\\tests.txt"); 
 
     // Lê o caminho do arquivo de entrada
+    // Retire o comentário para ler um arquivo diferente
+    
     // println!("File Path");
     // let mut file_path = String::new(); 
     // std::io::stdin().lock().read_line(&mut file_path).expect("CANNOT READ INPUT");

@@ -129,13 +129,14 @@ pub fn syntax_test<'a>(tokens: &[Token<'a>]) -> Vec<SyntaxError<'a>> {
             },
             _ => {
                 is_if = false;
-                
+
                 // println!("{tokens_iter:#?}\n{token:#?}");
                 if token.rule == lex::Rule::END || tokens_iter.len() == 0 {
                     // std::thread::sleep(std::time::Duration::new(10, 0));
                     break;
                 } else {
                     println!("NOT A FUNCTION CALL");
+
                     // break;
                     // std::thread::sleep(std::time::Duration::new(10, 0));
                     token_index += 1;

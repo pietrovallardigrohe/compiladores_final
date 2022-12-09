@@ -34,10 +34,7 @@ impl Token<'_> {
 /*
  * Entrada:
  * if(a == b) {
- *     a = 2;
  *     int a = 2;#asdasd
- *     a++;
- *     b+=1;
  * }
  * 
  * Retorno: Vec<Token> Todos os Tokens, incluindo os com erro
@@ -48,23 +45,12 @@ impl Token<'_> {
  * Token { input: "b", line: 1, column: 8, rule: IDENTIFIER }
  * Token { input: ")", line: 1, column: 9, rule: CLOSE_PARENTHESES }
  * Token { input: "{", line: 1, column: 11, rule: OPEN_BRACES }
- * Token { input: "a", line: 2, column: 17, rule: IDENTIFIER }
- * Token { input: "=", line: 2, column: 19, rule: ATTRIBUTION }
- * Token { input: "2", line: 2, column: 21, rule: NUM }
- * Token { input: ";", line: 2, column: 22, rule: COMMA }
  * Token { input: "int", line: 3, column: 28, rule: INT }
  * Token { input: "a", line: 3, column: 32, rule: IDENTIFIER }
  * Token { input: "=", line: 3, column: 34, rule: ATTRIBUTION }
  * Token { input: "2", line: 3, column: 36, rule: NUM }
  * Token { input: ";", line: 3, column: 37, rule: COMMA }
  * Token { input: "#asdasd", line: 3, column: 38, rule: ERROR }
- * Token { input: "a", line: 4, column: 50, rule: IDENTIFIER }
- * Token { input: "++", line: 4, column: 51, rule: INCREMENT_DECREMENT }
- * Token { input: ";", line: 4, column: 53, rule: COMMA }
- * Token { input: "b", line: 5, column: 59, rule: IDENTIFIER }
- * Token { input: "+=", line: 5, column: 60, rule: ATTRIBUTION }
- * Token { input: "1", line: 5, column: 62, rule: NUM }
- * Token { input: ";", line: 5, column: 63, rule: COMMA }
  * Token { input: "}", line: 6, column: 66, rule: CLOSE_BRACES }
  * 
  * Vec<Token> Erros
