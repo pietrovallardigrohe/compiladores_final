@@ -12,7 +12,7 @@ pub struct Lexer;
  * col -> start column of the token
  * rule -> Rule that accepted the input
  */
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 pub struct Token<'a> {
     pub input: &'a str,
     pub line: usize,
@@ -21,9 +21,9 @@ pub struct Token<'a> {
 }
 
 impl Token<'_> {
-    pub fn new(input: &'_ str, line: usize, column: usize, rule: Rule) -> Token {
+    pub fn new(input: &str, line: usize, column: usize, rule: Rule) -> Token {
         Token { 
-            input: input.into(),
+            input,
             line,
             column,
             rule

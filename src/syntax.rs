@@ -23,7 +23,7 @@ impl<'a> SyntaxError<'a> {
     }
 }
 
-fn get_tokens_rule(tokens: &Vec<Token>) -> String {
+fn get_tokens_rule(tokens: &[Token]) -> String {
     let mut tokens_combined = String::new();
 
     for token in tokens {
@@ -42,20 +42,20 @@ fn get_tokens_rule(tokens: &Vec<Token>) -> String {
  * ]
  * Saída: Sequencia de Erros sintáticos 
  */
-pub fn syntax_test<'a>(tokens: &'a Vec<Token<'a>>) -> Vec<SyntaxError<'a>> {
+pub fn syntax_test<'a>(tokens: &[Token<'a>]) -> Vec<SyntaxError<'a>> {
 
     let mut token_index: usize = 0;
     let mut errors: Vec<SyntaxError> = vec![];
     let mut is_if: bool = false;
-    loop {
-        let mut tokens_iter = match tokens.get(token_index..) {
-            Some(tks) => tks.iter(),
-            None => break
-        };
+    while let Some(tks) = tokens.get(token_index..) {
+        // let mut tokens_iter = match tokens.get(token_index..) {
+        //     Some(tks) => tks.iter(),
+        //     None => break
+        // };
 
-        
         // let mut index: usize = 0;
         // let mut parse_errors: Vec<SyntaxError> = vec![];
+        let mut tokens_iter = tks.iter();
         let token: &Token = tokens_iter.next().unwrap();
         
         println!("Token Index: {token_index}\n");
@@ -67,10 +67,10 @@ pub fn syntax_test<'a>(tokens: &'a Vec<Token<'a>>) -> Vec<SyntaxError<'a>> {
                     is_if = true;
                 }
 
-                let (index, mut parse_errors) = parse_call(tokens_iter.clone().map(|&token| token).collect::<Vec<Token>>(), Rule::CONDITION);
+                let (index, mut parse_errors) = parse_call(&tokens_iter.clone().copied().collect::<Vec<Token>>(), Rule::CONDITION);
                 token_index += index;
                 // println!("{:#?}", &tokens.get(token_index..).unwrap().to_vec());
-                let (last_token,mut body_errors) = parse_body(tokens.get(token_index..).unwrap().to_vec(), Rule::COMMAND);
+                let (last_token,mut body_errors) = parse_body(tokens.get(token_index..).unwrap(), Rule::COMMAND);
                 token_index += last_token;
                 parse_errors.append(&mut body_errors);
                 // println!("{last_token_line}\n {:#?}", tokens.get(last_token_line..).unwrap());
@@ -80,12 +80,12 @@ pub fn syntax_test<'a>(tokens: &'a Vec<Token<'a>>) -> Vec<SyntaxError<'a>> {
                 println!("ELSE");
 
                 // println!("{tokens_iter:#?}");
-                let (last_token, mut body_errors) = parse_body(tokens_iter.clone().map(|&token| token).collect::<Vec<Token>>(), Rule::COMMAND);
+                let (last_token, mut body_errors) = parse_body(&tokens_iter.clone().copied().collect::<Vec<Token>>(), Rule::COMMAND);
                 token_index += last_token;
                 token_index += 1;
                 // println!("Token Index: {token_index}");
                 
-                if is_if == false {
+                if !is_if{
                     body_errors.push(SyntaxError::new(*token, "ELSE WITHOUT IF"));
                 }
                 else {
@@ -102,10 +102,10 @@ pub fn syntax_test<'a>(tokens: &'a Vec<Token<'a>>) -> Vec<SyntaxError<'a>> {
 
                 is_if = false;
 
-                let (index, mut parse_errors) = parse_call(tokens_iter.clone().map(|&token| token).collect::<Vec<Token>>(), Rule::FOR_CALL);
+                let (index, mut parse_errors) = parse_call(&tokens_iter.clone().copied().collect::<Vec<Token>>(), Rule::FOR_CALL);
                 token_index += index;
                 
-                let (last_token, mut body_errors) = parse_body(tokens.get(token_index..).unwrap().to_vec(), Rule::COMMAND);
+                let (last_token, mut body_errors) = parse_body(tokens.get(token_index..).unwrap(), Rule::COMMAND);
                 token_index += last_token;
                 parse_errors.append(&mut body_errors);
                 
@@ -117,10 +117,10 @@ pub fn syntax_test<'a>(tokens: &'a Vec<Token<'a>>) -> Vec<SyntaxError<'a>> {
 
                 is_if = false;
 
-                let (index, mut parse_errors) = parse_call(tokens_iter.clone().map(|&token| token).collect::<Vec<Token>>(), Rule::ID);
+                let (index, mut parse_errors) = parse_call(&tokens_iter.clone().copied().collect::<Vec<Token>>(), Rule::ID);
                 token_index += index;
 
-                let (last_token, mut body_errors) = parse_body(tokens.get(token_index..).unwrap().to_vec(), Rule::CASE_BODY);
+                let (last_token, mut body_errors) = parse_body(tokens.get(token_index..).unwrap(), Rule::CASE_BODY);
                 token_index += last_token;
                 parse_errors.append(&mut body_errors);
                 
@@ -149,13 +149,12 @@ pub fn syntax_test<'a>(tokens: &'a Vec<Token<'a>>) -> Vec<SyntaxError<'a>> {
     errors
 }
 
-fn parse_call<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError<'a>>) {
+fn parse_call<'a>(tokens: &[Token<'a>], rule: Rule) -> (usize, Vec<SyntaxError<'a>>) {
     println!("================\nPARSING CALL");
 
     let mut last_token_index: usize = 0;
 
-    let binding = tokens.clone();
-    let mut tokens_iter = binding.iter();
+    let mut tokens_iter = tokens.iter();
     let mut token = tokens_iter.next().unwrap();
     last_token_index += 1;
 
@@ -205,7 +204,7 @@ fn parse_call<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError
     (last_token_index, errors)
 }
 
-fn parse_body<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError<'a>>) {
+fn parse_body<'a>(tokens: &[Token<'a>], rule: Rule) -> (usize, Vec<SyntaxError<'a>>) {
     println!("PARSING BODY");
 
     let mut last_token_index: usize = 0;
@@ -256,7 +255,7 @@ fn parse_body<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError
             last_token_index += 1;
         }
 
-        if command.len() > 0 {
+        if !command.is_empty(){
             errors.push(SyntaxError::new(*command.last().unwrap(), "EXPECTED COMMA"));
         }
 
@@ -265,7 +264,7 @@ fn parse_body<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError
         //                             .collect();
         // println!("{:#?}", &commands);
         for command in &inner_body {
-            match Syntax::parse(rule, &get_tokens_rule(&command)) {
+            match Syntax::parse(rule, &get_tokens_rule(command)) {
                 Ok(_) => (),//println!("COMMAND ACCEPTED: {:?}", &get_tokens_rule(&command)),
                 Err(error) => {
                     if let pest::error::LineColLocation::Pos((_, col)) = error.line_col {
@@ -286,7 +285,7 @@ fn parse_body<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError
     }
     else if rule == Rule::CASE_BODY {
         
-        let mut inner: Vec<Token> = tokens_iter.clone().map(|&token| token).collect();
+        let mut inner: Vec<Token> = tokens_iter.clone().copied().collect();
         inner.insert(0, *token);
         // println!("{token:#?}");
         
@@ -305,7 +304,7 @@ fn parse_body<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError
                     open_braces -= 1;
                     if open_braces == 0 {
                         // last_token_index += 1;
-                        if open_block == true {
+                        if open_block {
                             break;
                         } else {
                             errors.push(SyntaxError::new(*token, "BRACES ERROR"));
@@ -355,9 +354,11 @@ fn parse_body<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError
             }
             // last_token_index += 1;
         }
-        for case in &cases {
+
+        for (index, case) in cases.clone().into_iter().enumerate() {
             if case.is_empty() {
                 errors.push(SyntaxError::new(*case.last().unwrap(), "EXPECTED CASE BODY"));
+                cases.remove(index);
             }
         }
 
@@ -377,14 +378,14 @@ fn parse_body<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError
         // } 
         for case in cases {
             // let mut case_iter = case.into_iter().clone();
-            let token = *case.iter().next().unwrap();
+            let token = case.first().unwrap();
             let mut default_amount: i32 = 0;
             match token.rule {
                 lex::Rule::CASE | lex::Rule::DEFAULT => {
                     if token.rule == lex::Rule::DEFAULT { 
                         default_amount += 1;
                         if default_amount > 1 {
-                            errors.push(SyntaxError::new(token, "TOO MANY DEFAULT CASES"));
+                            errors.push(SyntaxError::new(*token, "TOO MANY DEFAULT CASES"));
                         }
                     }
                     // Parse Case Body
@@ -440,7 +441,7 @@ fn parse_body<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError
                     // println!("{:?}", commands);
 
                 },
-                _ => errors.push(SyntaxError::new(token, "CASE ERROR, EXPECTED CASE | DEFAULT"))
+                _ => errors.push(SyntaxError::new(*token, "CASE ERROR, EXPECTED CASE | DEFAULT"))
             }
         }
         // last_token_index += 1;

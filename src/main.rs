@@ -75,20 +75,20 @@ fn main() {
     output_string.push_str("\nOutput:\n");
     // Se for válido a análize printa o arquivo indicando onde estão os erros
     for (index, line) in raw_input.lines().enumerate() {
-        output_string.push_str(&format!("{line}"));
+        output_string.push_str(line);
         for error in &syntax_errors {
             if error.token.line == index + 1 {
                 output_string.push_str(&format!(" <--- Syntax Error || Message: {}", error.message));
                 // continue 'line_iter;
             }
         }
-        output_string.push_str("\n");
+        output_string.push('\n');
     }
 
     // Escreve as saídas no arquivo de saída
     writeln!(&mut out_file, "{output_string}").expect("CANNOT WRITE TO FILE");
 
-    if syntax_errors.len() == 0 {
+    if syntax_errors.is_empty() {
         output_string.push_str("\nNO ERRORS FOUND");
     }
 
