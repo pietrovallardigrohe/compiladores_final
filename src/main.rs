@@ -85,6 +85,7 @@ fn main() {
         output_string.push_str("\n");
     }
 
+    // Escreve as saídas no arquivo de saída
     writeln!(&mut out_file, "{output_string}").expect("CANNOT WRITE TO FILE");
 
     if syntax_errors.len() == 0 {
