@@ -31,14 +31,6 @@ impl Token<'_> {
     }
 }
 
-// impl Copy for Token {
-
-//     fn clone(&self) -> Token {
-//         *self;
-//     }
-
-// }
-
 /*
  * Entrada:
  * if(a == b) {
@@ -82,10 +74,8 @@ pub fn get_tokens(input: &str) -> (Vec<Token>, Vec<Token>) {
     let mut tokens: Vec<Token> = vec![];
     let mut errors: Vec<Token> = vec![];
 
-    let trimmed_input = input.trim();
-
     // Faz o parsing da entrada e formatação de cada token
-    match Lexer::parse(Rule::TOKEN, trimmed_input) {
+    match Lexer::parse(Rule::TOKEN, input.trim()) {
         Ok(pairs) => {
             for pair in pairs {
                 let pos = pair.as_span().start_pos();

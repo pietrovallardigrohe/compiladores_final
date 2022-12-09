@@ -1,16 +1,21 @@
-if(a == 1) {
-   a = 0
+switch(abc) {
+   case 1:  a = a + 1; break; }
+   case 2: case 3: { float b += 2; break; }
+   default:  { char a = "a"; }
+}
+
+if a == 1) {
+   a = 0;
    int a = 2;//asdasd
    a++;
-   b+=1;
+   b+=1
+}
+
+else {
+   char c = "a"
 }
 else {
    char c = "a";
-}
-switch(abc) {
-   case 1: { a = a + 1; break; }
-   case 2: case 3: { float b += 2; break; }
-   default: { char a = "a"; }
 }
 while(a == 1) {
    int b = 12;

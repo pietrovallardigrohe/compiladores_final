@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
-use pest::Parser;
-use std::{vec, env::current_exe};
+use pest::{Parser, iterators::Tokens, unicode::CLOSE_PUNCTUATION};
+use std::{vec, env::current_exe, rc::Rc, io::stdin};
 
 use crate::lex::{Token, self};
 
@@ -9,7 +9,7 @@ use crate::lex::{Token, self};
 #[grammar = "Grammar/Syntax.pest"]
 pub struct Syntax;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SyntaxError<'a> {
     pub token: Token<'a>,
     pub message: String
@@ -23,6 +23,15 @@ impl<'a> SyntaxError<'a> {
     }
 }
 
+fn get_tokens_rule(tokens: &Vec<Token>) -> String {
+    let mut tokens_combined = String::new();
+
+    for token in tokens {
+        tokens_combined.push_str(&format!("{:?} ", token.rule));
+    }
+
+    tokens_combined.trim().to_string()
+}
 /*
  * Entrada: Sequencia de tokens
  * [
@@ -33,342 +42,413 @@ impl<'a> SyntaxError<'a> {
  * ]
  * Saída: Sequencia de Erros sintáticos 
  */
-pub fn get_syntax_errors(tokens: Vec<Token>) -> Vec<SyntaxError> {
-    let mut index = 0;
-    let end = *tokens.last().unwrap();
-    let mut is_if: bool = false;
-    let mut errors: Vec<SyntaxError> = vec![];
-    
-    let mut token = *tokens.get(index).unwrap_or_else(|| &end);
-    index += 1;
-    // println!("{:?}", token);
-    // Separa os tokens em vetores, de chamada da função e outro para o corpo da função
-    'function: loop {
-        let mut func_call = vec![];
-        let mut func_body = vec![];
+pub fn syntax_test<'a>(tokens: &'a Vec<Token<'a>>) -> Vec<SyntaxError<'a>> {
 
-        // Function Call Tokens
-        match token.rule {
-            lex::Rule::IF | lex::Rule::SWITCH | lex::Rule::WHILE_FUNCTION | lex::Rule::FOR_FUNCTION => {
+    let mut token_index: usize = 0;
+    let mut errors: Vec<SyntaxError> = vec![];
+    let mut is_if: bool = false;
+    loop {
+        let mut tokens_iter = match tokens.get(token_index..) {
+            Some(tks) => tks.iter(),
+            None => break
+        };
+
+        
+        // let mut index: usize = 0;
+        // let mut parse_errors: Vec<SyntaxError> = vec![];
+        let token: &Token = tokens_iter.next().unwrap();
+        
+        println!("Token Index: {token_index}\n");
+        let function_errors: Vec<SyntaxError> = match token.rule {
+            lex::Rule::IF | lex::Rule::WHILE_FUNCTION => {
+                println!("IF/WHILE");
+
                 if token.rule == lex::Rule::IF {
                     is_if = true;
-                } else {
-                    is_if = false;
-                }
-                func_call.push(token);
-                token = *tokens.get(index).unwrap_or_else(|| &end);
-                index += 1;
-                // func_call.push(token);
-                // println!("{:?}", token);
-                if token.rule == lex::Rule::OPEN_PARENTHESES {
-                    func_call.push(token);
-                    token = *tokens.get(index).unwrap_or_else(|| &end);
-                    index += 1;
-                    'call: loop  {
-                        match token.rule {
-                            lex::Rule::CLOSE_PARENTHESES => {
-                                // Fim da chamada
-                                func_call.push(token);
-                                break 'call;
-                            },
-                            lex::Rule::OPEN_BRACES => {
-                                errors.push(SyntaxError::new(token, "EXPECTED CLOSING PARENTHESIS"));
-                                break 'call;
-                            }
-                            lex::Rule::END => {
-                                // Fim da entrada
-                                break 'function;
-                            }
-                            _ => (),
-                        }
-                        func_call.push(token);
-                        token = *tokens.get(index).unwrap_or_else(|| &end);
-                        index += 1;
-                    } 
-                } else {
-                    errors.push(SyntaxError::new(token, "EXPECTED PARENTHESIS"));
                 }
 
+                let (index, mut parse_errors) = parse_call(tokens_iter.clone().map(|&token| token).collect::<Vec<Token>>(), Rule::CONDITION);
+                token_index += index;
+                // println!("{:#?}", &tokens.get(token_index..).unwrap().to_vec());
+                let (last_token,mut body_errors) = parse_body(tokens.get(token_index..).unwrap().to_vec(), Rule::COMMAND);
+                token_index += last_token;
+                parse_errors.append(&mut body_errors);
+                // println!("{last_token_line}\n {:#?}", tokens.get(last_token_line..).unwrap());
+                parse_errors
             },
             lex::Rule::ELSE => {
-                if is_if {
-                    func_call.push(token);
+                println!("ELSE");
+
+                // println!("{tokens_iter:#?}");
+                let (last_token, mut body_errors) = parse_body(tokens_iter.clone().map(|&token| token).collect::<Vec<Token>>(), Rule::COMMAND);
+                token_index += last_token;
+                token_index += 1;
+                // println!("Token Index: {token_index}");
+                
+                if is_if == false {
+                    body_errors.push(SyntaxError::new(*token, "ELSE WITHOUT IF"));
+                }
+                else {
+                    // token_index += 1;
+                    is_if = false;
+                }
+
+                // std::thread::sleep(std::time::Duration::new(10, 0));
+
+                body_errors
+            }
+            lex::Rule::FOR_FUNCTION => {
+                println!("FOR");
+
+                is_if = false;
+
+                let (index, mut parse_errors) = parse_call(tokens_iter.clone().map(|&token| token).collect::<Vec<Token>>(), Rule::FOR_CALL);
+                token_index += index;
+                
+                let (last_token, mut body_errors) = parse_body(tokens.get(token_index..).unwrap().to_vec(), Rule::COMMAND);
+                token_index += last_token;
+                parse_errors.append(&mut body_errors);
+                
+                // println!("{last_token_line}\n {:#?}", tokens.get(last_token_line..).unwrap());           
+                parse_errors
+            },
+            lex::Rule::SWITCH => {
+                println!("SWITCH");
+
+                is_if = false;
+
+                let (index, mut parse_errors) = parse_call(tokens_iter.clone().map(|&token| token).collect::<Vec<Token>>(), Rule::ID);
+                token_index += index;
+
+                let (last_token, mut body_errors) = parse_body(tokens.get(token_index..).unwrap().to_vec(), Rule::CASE_BODY);
+                token_index += last_token;
+                parse_errors.append(&mut body_errors);
+                
+                // println!("{token_index}\n {:#?}", tokens.get(token_index..).unwrap());
+                parse_errors
+            },
+            _ => {
+                is_if = false;
+                
+                // println!("{tokens_iter:#?}\n{token:#?}");
+                if token.rule == lex::Rule::END || tokens_iter.len() == 0 {
+                    // std::thread::sleep(std::time::Duration::new(10, 0));
+                    break;
                 } else {
-                    errors.push(SyntaxError::new(token, "EXPECTED IF FUNCTION PRIOR"));
+                    println!("NOT A FUNCTION CALL");
+                    // break;
+                    // std::thread::sleep(std::time::Duration::new(10, 0));
+                    token_index += 1;
+                    vec![]
                 }
-            },
-            lex::Rule::END => {
-                break;
             }
-            _ => {
-                errors.push(SyntaxError::new(token, "CALL UNRECOGNIZED"))
-            }
-        }
+        };
+        errors.extend(function_errors);
+    }
 
-        token = *tokens.get(index).unwrap_or_else(|| &end);
-        index += 1;
-        func_body.push(token);
-        
-        // Body of the function
+    errors
+}
+
+fn parse_call<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError<'a>>) {
+    println!("================\nPARSING CALL");
+
+    let mut last_token_index: usize = 0;
+
+    let binding = tokens.clone();
+    let mut tokens_iter = binding.iter();
+    let mut token = tokens_iter.next().unwrap();
+    last_token_index += 1;
+
+    let mut errors = vec![];
+
+    // OPEN PARENTHESES PARSE
+    if token.rule == lex::Rule::OPEN_PARENTHESES {
+        token = tokens_iter.next().unwrap();
+        last_token_index += 1;
+    } else {
+        errors.push(SyntaxError::new(*token, "OPEN PARENTHESES EXPECTED"));
+    }
+
+    // INNER CALL TOKENS
+    let mut inner_call: Vec<Token> = vec![];
+    loop {
         match token.rule {
-            lex::Rule::OPEN_BRACES => {
-                let mut open_braces: i32 = 1;  
-
-                token = *tokens.get(index).unwrap_or_else(|| &end);
-                index += 1;
-                'body: loop {
-                    match token.rule {
-                        lex::Rule::OPEN_BRACES => open_braces += 1,
-                        lex::Rule::CLOSE_BRACES => {
-                            open_braces -= 1;
-                            if open_braces == 0 {
-                                func_body.push(token);
-                                break;
-                            }
-                        },
-                        lex::Rule::IF | lex::Rule::ELSE | lex::Rule::SWITCH => {
-                            if open_braces != 0 {
-                                errors.push(SyntaxError::new(token, "BRACES ERROR"));
-                            }
-                            continue 'function;
-                        },
-                        lex::Rule::END => {
-                            if open_braces != 0 {
-                                errors.push(SyntaxError::new(token, "BRACES ERROR"));
-                                break 'body;
-                            }
-                            // errors.push(SyntaxError::new(token, "EARLY END OF STREAM"));
-                            break;
-                        },
-                        _ => {
-                            // println!("{:?}", token);
-                        }
-                    }
-                    func_body.push(token);
-                    token = *tokens.get(index).unwrap_or_else(|| &end);
-                    index += 1;
-                }
-
+            lex::Rule::CLOSE_PARENTHESES => {
+                last_token_index += 1;
+                break;
+            },
+            lex::Rule::OPEN_BRACES | lex::Rule::END => {
+                errors.push(SyntaxError::new(*token, "EXPECTED CLOSE PARENTHESES"));
+                break;
             },
             _ => {
-                errors.push(SyntaxError::new(token, "FAILED TO OPEN BRACES"));
-                continue 'function;
+                inner_call.push(*token);
+                token = tokens_iter.next().unwrap();
+                last_token_index += 1;
             }
         }
-        token = *tokens.get(index).unwrap_or_else(|| &end);
-        index += 1;
+    }
+    
+    // INNER CALL PARSE
+    match Syntax::parse(rule, &get_tokens_rule(&inner_call)) {
+        Ok(_) => println!("RULE {:?} ACCEPTED", rule),
+        Err(_) => {
+            println!("RULE {:?} REJECTED", rule);
+            errors.push(SyntaxError::new(*token, "EXPECTED CONDITION"))
+        }
+    }
 
-        let mut is_switch = false;
+    // println!("Current Token: {:?} , Iter: {:#?}", *token, tokens_iter);
+    println!("ERRORS=======\n{:#?}", errors);
+    println!("PARSE CALL END\n");
 
-        // Function call parsing
-        if func_call.len() > 3 {
-            let rule = func_call[0].rule;
-            func_call = func_call[2..].to_vec();
-            func_call = func_call[..func_call.len()-1].to_vec();
+    (last_token_index, errors)
+}
 
-            let call = func_call.iter().map(|ele| format!("{:?} ", ele.rule)).collect::<String>();
-            // println!("{call}");
+fn parse_body<'a>(tokens: Vec<Token<'a>>, rule: Rule) -> (usize, Vec<SyntaxError<'a>>) {
+    println!("PARSING BODY");
 
-            match rule {
-                lex::Rule::IF => {
-                    is_switch = false;
-                    let result = Syntax::parse(Rule::IF_CALL, &call);
-                    match result {
-                        Ok(_) => (),
-                        Err(err) => {
-                            if let pest::error::LineColLocation::Pos((_, col)) = err.line_col {
-                                let token_index = err.line().get(col..).unwrap().split_whitespace().count() +1 ;
-                                errors.push(SyntaxError::new(func_call[token_index], format!("IF CALL ERROR")));
-                                // println!("IF Parsing error, {:?}\n str: {:?} col: {:?}", func_call[token_index], err.line(), col);
-                            }
+    let mut last_token_index: usize = 0;
+
+    let mut tokens_iter = tokens.iter();
+    let mut token = tokens_iter.next().unwrap();
+    last_token_index += 1;
+
+    let mut errors = vec![];
+
+    // OPEN BRACES PARSE
+    if token.rule == lex::Rule::OPEN_BRACES {
+        token = tokens_iter.next().unwrap();
+        last_token_index += 1;
+    } else {
+        errors.push(SyntaxError::new(*token, "OPEN BRACES EXPECTED"));
+    }
+
+    // INNER BODY
+    if rule == Rule::COMMAND {
+        let mut inner_body: Vec<Vec<Token>> = vec![];
+        let mut command: Vec<Token> = vec![];
+        loop {
+            match token.rule {
+                lex::Rule::CLOSE_BRACES => {
+                    // last_token_index += 1;
+                    break;
+                },
+                lex::Rule::OPEN_BRACES => {
+                    errors.push(SyntaxError::new(*token, "CLOSE BRACES EXPECTED"));
+                    break;
+                },
+                lex::Rule::IF | lex::Rule::ELSE | lex::Rule::SWITCH | lex::Rule::WHILE_FUNCTION | lex::Rule::FOR_FUNCTION => {
+                    errors.push(SyntaxError::new(*token, "CLOSE BRACES EXPECTED"));
+                    break;
+                },
+                lex::Rule::COMMA => {
+                    command.push(*token);
+                    inner_body.push(command);
+                    command = vec![];
+                    token = tokens_iter.next().unwrap();
+                },
+                _ => {
+                    command.push(*token);
+                    token = tokens_iter.next().unwrap();
+                }
+            }
+            last_token_index += 1;
+        }
+
+        if command.len() > 0 {
+            errors.push(SyntaxError::new(*command.last().unwrap(), "EXPECTED COMMA"));
+        }
+
+        // let tokens: Vec<&str> = body.split(' ')
+        //                             .filter(|ele| !ele.is_empty())
+        //                             .collect();
+        // println!("{:#?}", &commands);
+        for command in &inner_body {
+            match Syntax::parse(rule, &get_tokens_rule(&command)) {
+                Ok(_) => (),//println!("COMMAND ACCEPTED: {:?}", &get_tokens_rule(&command)),
+                Err(error) => {
+                    if let pest::error::LineColLocation::Pos((_, col)) = error.line_col {
+                        // current_pos += col;
+                        // println!("{:?} {col}", err.line());
+                        let token_index = error.line().get(..col).unwrap_or_else(|| error.line()).split_whitespace().count();
+                        // println!("{:#?} {}", &command, token_index-1);
+                        errors.push(SyntaxError::new(command[token_index-1], "FAILED TO PARSE COMMAND"));
+                    }
+                }
+            }
+        }
+        
+        // println!("Current Token: {:?} , Iter: {:#?}", *token, tokens_iter);
+        // println!("Inner Body \n{:#?}", inner_body);
+        // println!("Index: {last_token_index} LEN: {:#?}", tokens_iter.len());
+
+    }
+    else if rule == Rule::CASE_BODY {
+        
+        let mut inner: Vec<Token> = tokens_iter.clone().map(|&token| token).collect();
+        inner.insert(0, *token);
+        // println!("{token:#?}");
+        
+        let mut switch_body: Vec<Token> = vec![];
+        let mut open_braces: i32 = 1;
+        let mut open_block = false;
+        for token in &inner {
+            match token.rule {
+                lex::Rule::OPEN_BRACES => {
+                    open_braces += 1;
+                    open_block = true;
+                    switch_body.push(*token);
+                },
+                lex::Rule::CLOSE_BRACES => {
+                    switch_body.push(*token);
+                    open_braces -= 1;
+                    if open_braces == 0 {
+                        // last_token_index += 1;
+                        if open_block == true {
+                            break;
+                        } else {
+                            errors.push(SyntaxError::new(*token, "BRACES ERROR"));
+                            
+                            last_token_index -= 1;
+                            return (last_token_index, errors);
+
                         }
                     }
                 },
-                lex::Rule::SWITCH => {
-                    is_switch = true;
-                    let result = Syntax::parse(Rule::SWITCH_CALL, &call);
+                lex::Rule::IF | lex::Rule::ELSE | lex::Rule::SWITCH | lex::Rule::WHILE_FUNCTION | lex::Rule::FOR_FUNCTION => {
+                    errors.push(SyntaxError::new(*token, "CLOSE BRACES EXPECTED"));
+                    last_token_index += 1;
+                    break;
+                },
+                _ => {
+                    switch_body.push(*token);
+                }
+            }
+            last_token_index += 1;
+        }
+        
+        // inner.iter().for_each(|token| println!("{token:?}"));
+        
+        // switch_body.pop().unwrap(); // Removes the $end$ Token
+        
+        let last_token = switch_body.pop().unwrap();
+        if last_token.rule != lex::Rule::CLOSE_BRACES {
+            errors.push(SyntaxError::new(last_token, "EXPECTED CLOSING BRACES"));
+        }
+        
+        let mut cases: Vec<Vec<Token>> = vec![];
+        let mut case: Vec<Token> = vec![];
+        for token in &switch_body {
+            match token.rule {
+                lex::Rule::CLOSE_BRACES => {
+                    case.push(*token);
+                    cases.push(case.clone());
+                    case.clear();
+                }
+                lex::Rule::COLON => {
+                    case.push(*token);
+                },
+                _ => {
+                    case.push(*token);
+                }
+            }
+            // last_token_index += 1;
+        }
+        for case in &cases {
+            if case.is_empty() {
+                errors.push(SyntaxError::new(*case.last().unwrap(), "EXPECTED CASE BODY"));
+            }
+        }
+
+        // switch_body.iter().for_each(|token| println!("{token:?}"));
+        // println!("Cases: {cases:#?}");
+
+        // for case in cases {
+        //     let mut case_iter = case.iter();
+        //     let mut token = case_iter.next().unwrap();
+            
+        //     let mut _case: Vec<Token> = vec![]; 
+        //     if token.rule == lex::Rule::CASE {
+        //         token = case_iter.next()
+        //     } else {
+        //         errors.push(SyntaxError::new(*token, "EXPECTED CASE | DEFAULT"));
+        //     }
+        // } 
+        for case in cases {
+            // let mut case_iter = case.into_iter().clone();
+            let token = *case.iter().next().unwrap();
+            let mut default_amount: i32 = 0;
+            match token.rule {
+                lex::Rule::CASE | lex::Rule::DEFAULT => {
+                    if token.rule == lex::Rule::DEFAULT { 
+                        default_amount += 1;
+                        if default_amount > 1 {
+                            errors.push(SyntaxError::new(token, "TOO MANY DEFAULT CASES"));
+                        }
+                    }
+                    // Parse Case Body
+                    // println!("{case:#?}, len: {:#?}", case.len());
+                    let _case: Vec<&Token> = case.iter().take_while(|token| token.rule != lex::Rule::OPEN_BRACES).collect();
+                    // let mut has_braces: bool = false;  
+                    // _case.iter().for_each(|token| {
+                    //     if token.rule == lex::Rule::OPEN_BRACES { has_braces = true; }
+                    // });
+
+                    // if has_braces == false {
+                    //     errors.push(SyntaxError::new(**_case.last().unwrap(), "EXPECTED OPEN BRACES"));
+                    //     continue;
+                    // }
+
+                    let case_body = _case.iter().map(|token| format!("{:?}", token.rule)).collect::<String>();
+                    let result = Syntax::parse(Rule::CASE_BODY, &case_body);                    
                     match result {
                         Ok(_) => (),
                         Err(err) => {
                             if let pest::error::LineColLocation::Pos((_, col)) = err.line_col {
                                 let token_index = err.line().get(col..).unwrap().split_whitespace().count();
-                                errors.push(SyntaxError::new(func_call[token_index], format!("SWITCH CALL ERROR")));
-                                // println!("IF Parsing error, {:?}\n str: {:?} col: {:?}", func_call[token_index], err.line(), col);
+                                errors.push(SyntaxError::new(*_case[token_index], "FAILED TO PARSE CASE"));
+                                continue;
                             }
                         }
                     }
-                },
-                lex::Rule::WHILE_FUNCTION => {
-                    is_switch = false;
-                    let result = Syntax::parse(Rule::WHILE_CALL, &call);
-                    match result {
-                        Ok(_) => (),
-                        Err(err) => {
-                            if let pest::error::LineColLocation::Pos((_, col)) = err.line_col {
-                                let token_index = err.line().get(col..).unwrap().split_whitespace().count() +1 ;
-                                errors.push(SyntaxError::new(func_call[token_index], format!("WHILE CALL ERROR")));
-                                // println!("IF Parsing error, {:?}\n str: {:?} col: {:?}", func_call[token_index], err.line(), col);
-                            }
-                        }
-                    }                   
-                },
-                lex::Rule::FOR_FUNCTION => {
-                    is_switch = false;
-                    let result = Syntax::parse(Rule::FOR_CALL, &call);
-                    match result {
-                        Ok(_) => (),
-                        Err(err) => {
-                            if let pest::error::LineColLocation::Pos((_, col)) = err.line_col {
-                                let token_index = err.line().get(col..).unwrap().split_whitespace().count() +1 ;
-                                errors.push(SyntaxError::new(func_call[token_index], format!("FOR CALL ERROR")));
-                                // println!("IF Parsing error, {:?}\n str: {:?} col: {:?}", func_call[token_index], err.line(), col);
-                            }
-                        }
-                    }  
-                },
-                _ => { 
-                    println!("parse error");
-                }
-            }
-        } else if func_call.len() == 1 {    
-            let rule = func_call[0].rule;
-            if rule != lex::Rule::ELSE {
-                errors.push(SyntaxError::new(func_call[0], "ELSE CALL ERROR"));
-            }
-        }
-
-        // Body parsing
-        // Parsing de cada commando
-        func_body.remove(0);
-        func_body.pop().unwrap();
-        // Tratamento diferente para função switch
-        if is_switch {
-            let mut case: Vec<Token> = vec![];
-            let mut cases: Vec<Vec<Token>> = vec![];
-
-            for token in func_body {
-                match token.rule {
-                    lex::Rule::CLOSE_BRACES => {
-                        case.push(token);
-                        cases.push(case.clone());
-                        case.clear();
-                        
+                    // println!("{:#?}", case[_case.len()..].to_vec());
+                    // Trim braces from block 
+                    let mut body = case.clone()[_case.len()..].to_vec();
+                    body.remove(0);
+                    let closing_braces = body.pop().unwrap();
+                    if body.last().unwrap().rule != lex::Rule::COMMA {
+                        errors.push(SyntaxError::new(closing_braces, "COMMAND ERROR, EXPECTED BRACES"));
+                        break;
                     }
-                    lex::Rule::COLON => {
-                        case.push(token);
-                    },
-                    _ => {
-                        case.push(token);
-                    }
-                }
-            }
-
-            // cases.iter().for_each(|_token| println!("{:#?}", _token));
-            for case in cases {
-                // let mut case_iter = case.into_iter().clone();
-                let token = *case.iter().next().unwrap();
-                let mut default_amount: i32 = 0;
-                match token.rule {
-                    lex::Rule::CASE | lex::Rule::DEFAULT => {
-                        if token.rule == lex::Rule::DEFAULT { 
-                            default_amount += 1;
-                            if default_amount > 1 {
-                                errors.push(SyntaxError::new(token, "TOO MANY DEFAULT CASES"));
-                            }
-                        }
-                        // Parse Case Body
-                        let _case: Vec<&Token> = case.iter().take_while(|token| token.rule != lex::Rule::OPEN_BRACES).collect();
-                        let case_body = _case.iter().map(|token| format!("{:?}", token.rule)).collect::<String>();
-                        let result = Syntax::parse(Rule::CASE_BODY, &case_body);                    
-                        match result {
+                    let _body = body.iter().map(|token| format!("{:?} ", token.rule)).collect::<String>();
+                    let commands: Vec<&str> = _body.split_inclusive("COMMA ").collect();
+                    for command in &commands {
+                        // println!("{command}");
+                        match Syntax::parse(Rule::COMMAND, command) {
                             Ok(_) => (),
                             Err(err) => {
                                 if let pest::error::LineColLocation::Pos((_, col)) = err.line_col {
-                                    let token_index = err.line().get(col..).unwrap().split_whitespace().count();
-                                    errors.push(SyntaxError::new(*_case[token_index], "FAILED TO PARSE CASE"));
+                                    // println!("{} {col}", err.line());
+                                    let token_index = err.line().get(col..).unwrap_or_else(|| err.line()).split_whitespace().count();
+                                    errors.push(SyntaxError::new(body[token_index - 1], "FAILED TO PARSE COMMAND"));
                                 }
                             }
-                        }
-                        // println!("{:#?}", case[_case.len()..].to_vec());
-                        // Trim braces from block 
-                        let mut body = case.clone()[_case.len()..].to_vec();
-                        body.remove(0);
-                        let closing_braces = body.pop().unwrap();
-                        if body.last().unwrap().rule != lex::Rule::COMMA {
-                            errors.push(SyntaxError::new(closing_braces, "COMMAND ERROR, EXPECTED BRACES"));
-                            break;
-                        }
-                        let _body = body.iter().map(|token| format!("{:?} ", token.rule)).collect::<String>();
-                        let commands: Vec<&str> = _body.split_inclusive("COMMA ").collect();
-                        for command in commands {
-                            // println!("{command}");
-                            match Syntax::parse(Rule::COMMAND, command) {
-                                Ok(_) => (),
-                                Err(err) => {
-                                    if let pest::error::LineColLocation::Pos((_, col)) = err.line_col {
-                                        // println!("{} {col}", err.line());
-                                        let token_index = err.line().get(col..).unwrap_or_else(|| err.line()).split_whitespace().count();
-                                        errors.push(SyntaxError::new(body[token_index - 1], "FAILED TO PARSE COMMAND"));
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // println!("{:?}", commands);
-
-                    },
-                    _ => errors.push(SyntaxError::new(token, "CASE ERROR, EXPECTED CASE | DEFAULT"))
-                }
-            }
-
-        } else {
-            // println!("{:?}", func_body);
-            
-            let mut comms: Vec<Vec<Token>> = vec![];
-            let mut comm: Vec<Token> = vec![];
-            for token in &func_body {
-                if token.rule == lex::Rule::COMMA {
-                    comm.push(token.clone());
-                    comms.push(comm.clone());
-                    comm = vec![];
-                } else if token == func_body.last().unwrap() {
-                    comm.push(token.clone());
-                    comms.push(comm.clone());
-                    comm = vec![];
-                } else {
-                    comm.push(token.clone());
-                }
-            }
-
-            let rules = func_body.iter().map(|ele| format!("{:?} ", ele.rule)).collect::<String>();
-            
-            let commands: Vec<&str> = rules.split_inclusive("COMMA ").collect();
-            // println!("{:#?}\n\n{:#?}", comms, commands);
-            let mut command_counter = 0;
-            for command in commands {
-                // println!("{command} ");
-                match Syntax::parse(Rule::COMMAND, command) {
-                    Ok(_) => (),
-                    Err(err) => {
-                        if let pest::error::LineColLocation::Pos((_, col)) = err.line_col {
-                            // current_pos += col;
-                            // println!("{:?} {col}", err.line());
-                            let token_index = comms[command_counter].len() - err.line().get(col..).unwrap_or_else(|| err.line()).split_whitespace().count();
-                            // println!("{}", token_index-1);
-                            errors.push(SyntaxError::new(comms[command_counter][token_index], "FAILED TO PARSE COMMAND"));
                         }
                     }
-                }
-                command_counter += 1;
+                    
+                    // println!("{:?}", commands);
+
+                },
+                _ => errors.push(SyntaxError::new(token, "CASE ERROR, EXPECTED CASE | DEFAULT"))
             }
         }
-
-        // println!("\nFUNCTION CALL==============");
-        // func_call.iter().for_each(|token| println!("{:?}", token));
-        // println!("\nFUNCTION BODY==============");
-        // func_body.iter().for_each(|token| println!("{:?}", token));
+        // last_token_index += 1;
     }
-    // println!("\nErrors==============");
-    // errors.iter().for_each(|err| println!("{:#?}\n{:?}\n", err.message, err.token));
-    errors
+    
+    println!("Index: {last_token_index}");
+    println!("ERRORS=======\n{:#?}", errors);
+    println!("PARSE BODY END\n================");
+
+    (last_token_index, errors)
 }
